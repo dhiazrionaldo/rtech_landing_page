@@ -1,0 +1,32 @@
+import { notFound } from "next/navigation";
+
+import { About } from "@/components/sections/about";
+import { Contact } from "@/components/sections/contact";
+import { Expertise } from "@/components/sections/expertise";
+import { Hero } from "@/components/sections/hero";
+import { Products } from "@/components/sections/products";
+import { SiteFooter } from "@/components/sections/site-footer";
+import { isLocale } from "@/content/i18n";
+
+/**
+ * One route per locale, fully server-rendered. The only client components are
+ * the media player and the theme toggle, so every word of copy — including all
+ * ten project names — is in the initial HTML for crawlers and for LCP.
+ */
+export default async function Page({ params }: PageProps<"/[locale]">) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+
+  return (
+    <>
+      <Hero locale={locale} />
+      <main className="flex-1">
+        <About locale={locale} />
+        <Expertise locale={locale} />
+        <Products locale={locale} />
+        <Contact locale={locale} />
+      </main>
+      <SiteFooter locale={locale} />
+    </>
+  );
+}
