@@ -106,8 +106,8 @@ export const contact = {
   phone: "0812-788-315-73",
   /** E.164 for the tel: href and JSON-LD. */
   phoneE164: "+6281278831573",
-  address: pending("Street address for the ProfessionalService schema"),
-  locality: pending("City and province"),
+  address: "Jl. Perumahan Rakyat No.11, Sei. Buah, Ilir Timur II, Palembang",
+  locality: "Jakarta / Palembang / Bekasi",
 } as const;
 
 const sectorsId: Sector[] = [
