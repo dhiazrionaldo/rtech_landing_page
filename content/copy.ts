@@ -26,6 +26,28 @@ export type Product = {
   blurb: string;
 };
 
+/**
+ * Screen recordings of each system running, keyed by product id — the file
+ * names in `public/video` already encoded this mapping.
+ *
+ * Locale-independent, so it sits here rather than in either dictionary. The
+ * numbers are read out of the MP4 headers, not estimated: `seconds` from
+ * `mvhd`, the aspect from `tkhd`. Every one of these is far past the 2 MB
+ * autoplay budget in CLAUDE.md, so they are click-to-play and nothing but a
+ * metadata range request happens until someone asks for one.
+ */
+export type ProductCapture = {
+  src: string;
+  /** Duration in seconds, read from the container. */
+  seconds: number;
+};
+
+export const productCaptures: Record<string, ProductCapture> = {
+  hsse: { src: "/video/hsse.mp4", seconds: 58.5 },
+  optigain: { src: "/video/optigain.mp4", seconds: 43.1 },
+  "fire-truck": { src: "/video/fire-truck.mp4", seconds: 20 },
+};
+
 type Dict = {
   nav: { label: string; href: string }[];
   hero: {
@@ -63,8 +85,10 @@ type Dict = {
     heading: string;
     body: string;
     items: Product[];
-    /** Outstanding asset request, not prose. */
-    note: Fillable;
+    /** Label on the still frame, e.g. "Screen recording". */
+    captureLabel: string;
+    /** Prefixes the product name to name the play control for screen readers. */
+    playLabel: string;
   };
   contact: {
     badge: string;
@@ -232,9 +256,8 @@ export const copy: Record<Locale, Dict> = {
             "Simulasi pelatihan tanggap darurat kebakaran yang interaktif, dipakai untuk melatih tim tanpa menurunkan armada sungguhan.",
         },
       ],
-      note: pending(
-        "Tangkapan layar asli untuk tiap produk (PNG/WebP) — saat ini belum ada aset visual per produk",
-      ),
+      captureLabel: "Rekaman layar",
+      playLabel: "Putar rekaman",
     },
     contact: {
       badge: "Hubungi kami",
@@ -323,9 +346,8 @@ export const copy: Record<Locale, Dict> = {
             "An interactive emergency response training simulation, used to drill teams without taking real appliances off the line.",
         },
       ],
-      note: pending(
-        "Real screenshots for each product (PNG/WebP) — no per-product visual assets exist yet",
-      ),
+      captureLabel: "Screen recording",
+      playLabel: "Play recording",
     },
     contact: {
       badge: "Contact",
