@@ -157,9 +157,9 @@ const sectorsId: Sector[] = [
     name: "Aviation",
     discipline: "Spesialis integrasi ERP, kargo, dan operasional",
     projects: [
-      "AI Warehouse Management System",
-      "AI Recruitment Agent",
-      "AI Cargo Execution System",
+      "Lounge Management System",
+      "Cargo Policy & Procedure AI Agent",
+      "Baggage Reconciliation System",
     ],
   },
   {
@@ -241,7 +241,7 @@ export const copy: Record<Locale, Dict> = {
     about: {
       badge: "Tentang kami",
       heading: "Dari penyedia layanan menjadi mitra strategis digitalisasi.",
-      body: "Kami memiliki rekam jejak dalam menangani proyek-proyek kompleks untuk Oil & Gas (Pertamina), Aviation (CAS), dan manufaktur, mencakup digitalisasi HSSE dan Command Center operasional.",
+      body: "Kami memiliki rekam jejak dalam menangani proyek-proyek kompleks untuk Oil & Gas (Pertamina), Aviation , dan manufaktur, mencakup digitalisasi HSSE dan Command Center operasional.",
       missionLabel: "Misi",
       // Verbatim from the deck.
       mission:
@@ -333,7 +333,7 @@ export const copy: Record<Locale, Dict> = {
     about: {
       badge: "About us",
       heading: "From service provider to strategic digitalisation partner.",
-      body: "We have a track record on complex projects for oil and gas (Pertamina), aviation (CAS), and manufacturing, covering HSSE digitalisation and operational command centres.",
+      body: "We have a track record on complex projects for oil and gas (Pertamina), aviation, and manufacturing, covering HSSE digitalisation and operational command centres.",
       missionLabel: "Mission",
       mission:
         "To deliver adaptive, integrated technology solutions with real operational impact for our clients, through continuous innovation.",
@@ -397,7 +397,7 @@ export const copy: Record<Locale, Dict> = {
 /** Named clients, cleared for public use. */
 export const clients = [
   { name: "Pertamina", sector: "Oil and Gas" },
-  { name: "CAS", sector: "Aviation" },
+  { name: "JAS", sector: "Aviation" },
 ] as const;
 
 export const seo: Record<Locale, { title: string; description: string }> = {
