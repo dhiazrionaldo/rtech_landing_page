@@ -1,3 +1,9 @@
+import type { StaticImageData } from "next/image";
+
+import fireTruckPoster from "@/public/image/capture-fire-truck.webp";
+import hssePoster from "@/public/image/capture-hsse.webp";
+import optigainPoster from "@/public/image/capture-optigain.webp";
+
 import { pending, type Fillable } from "./pending";
 import type { Locale } from "./i18n";
 
@@ -27,25 +33,50 @@ export type Product = {
 };
 
 /**
- * Screen recordings of each system running, keyed by product id — the file
- * names in `public/video` already encoded this mapping.
+ * Footage of each system, keyed by product id — the file names in
+ * `public/video` already encoded this mapping.
  *
- * Locale-independent, so it sits here rather than in either dictionary. The
- * numbers are read out of the MP4 headers, not estimated: `seconds` from
- * `mvhd`, the aspect from `tkhd`. Every one of these is far past the 2 MB
- * autoplay budget in CLAUDE.md, so they are click-to-play and nothing but a
- * metadata range request happens until someone asks for one.
+ * Locale-independent, so it sits here rather than in either dictionary.
+ *
+ * `seconds` is read out of the MP4 `mvhd` box, not estimated. All three files
+ * are far past the 2 MB autoplay budget in CLAUDE.md (2.8 / 11.5 / 5.5 MB), so
+ * every one of them is click-to-play behind a poster and nothing touches the
+ * network until someone asks for it.
+ *
+ * `kind` is what the asset honestly is. The Fire Truck file is a genuine screen
+ * capture of the simulator; the other two are produced films that show the real
+ * UI inside device mockups. Labelling all three "screen recording" would
+ * overclaim, which is the one thing this page cannot afford to do.
+ *
+ * Posters are real frames pulled out of the clips themselves, chosen at a point
+ * where the system is on screen rather than a title card.
  */
 export type ProductCapture = {
   src: string;
-  /** Duration in seconds, read from the container. */
+  poster: StaticImageData;
   seconds: number;
+  kind: "film" | "capture";
 };
 
 export const productCaptures: Record<string, ProductCapture> = {
-  hsse: { src: "/video/hsse.mp4", seconds: 58.5 },
-  optigain: { src: "/video/optigain.mp4", seconds: 43.1 },
-  "fire-truck": { src: "/video/fire-truck.mp4", seconds: 20 },
+  hsse: {
+    src: "/video/hsse.mp4",
+    poster: hssePoster,
+    seconds: 58.5,
+    kind: "film",
+  },
+  optigain: {
+    src: "/video/optigain.mp4",
+    poster: optigainPoster,
+    seconds: 43.1,
+    kind: "film",
+  },
+  "fire-truck": {
+    src: "/video/fire-truck.mp4",
+    poster: fireTruckPoster,
+    seconds: 20,
+    kind: "capture",
+  },
 };
 
 type Dict = {
@@ -85,8 +116,8 @@ type Dict = {
     heading: string;
     body: string;
     items: Product[];
-    /** Label on the still frame, e.g. "Screen recording". */
-    captureLabel: string;
+    /** What the asset is, keyed by `ProductCapture["kind"]`. */
+    captureKinds: Record<ProductCapture["kind"], string>;
     /** Prefixes the product name to name the play control for screen readers. */
     playLabel: string;
   };
@@ -256,8 +287,8 @@ export const copy: Record<Locale, Dict> = {
             "Simulasi pelatihan tanggap darurat kebakaran yang interaktif, dipakai untuk melatih tim tanpa menurunkan armada sungguhan.",
         },
       ],
-      captureLabel: "Rekaman layar",
-      playLabel: "Putar rekaman",
+      captureKinds: { film: "Video produk", capture: "Rekaman layar" },
+      playLabel: "Putar",
     },
     contact: {
       badge: "Hubungi kami",
@@ -346,8 +377,8 @@ export const copy: Record<Locale, Dict> = {
             "An interactive emergency response training simulation, used to drill teams without taking real appliances off the line.",
         },
       ],
-      captureLabel: "Screen recording",
-      playLabel: "Play recording",
+      captureKinds: { film: "Product film", capture: "Screen recording" },
+      playLabel: "Play",
     },
     contact: {
       badge: "Contact",

@@ -1,78 +1,58 @@
 "use client";
 
+import Image, { type StaticImageData } from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
 /**
- * A product's screen recording, sitting at the head of its card.
+ * A product's footage, sitting at the head of its card.
  *
- * These are real captures of systems running — the thing CLAUDE.md asks for
- * over cinematic footage — and they are correspondingly heavy: 2.7 MB, 5.5 MB
- * and 11.5 MB. Well past the 2 MB autoplay budget, so none of them autoplay.
- * The card shows a still and the viewer decides.
+ * These files are 2.8, 5.5 and 11.5 MB — far past the 2 MB autoplay budget in
+ * CLAUDE.md, so none of them autoplay and none of them preload. The card is a
+ * poster image until someone clicks it; the <video> is not in the DOM before
+ * that, so `preload` policy never even comes into it and the section costs
+ * three WebP thumbnails.
  *
- * The still is the recording's own first second, not a separate poster file.
- * With `preload="metadata"` and a `#t=` media fragment the browser fetches the
- * header and one frame — all three files are faststart, so that is a small
- * range request off the front, not the whole clip. It also means the thumbnail
- * cannot drift out of sync with the footage, and there is no invented artwork
- * standing in for a client system.
+ * The poster is a real frame lifted out of the clip it fronts, not separate
+ * artwork, so the still can never misrepresent what playing it shows. It is a
+ * static import, which means next/image gets intrinsic dimensions and a blur
+ * placeholder — no layout shift when it decodes.
  *
- * Sequence: nothing on the wire → in view, fetch metadata and paint the frame →
- * clicked, fetch and play. Paused again the moment it scrolls away.
- *
- * Starts muted even though the click is a user gesture. Two of the three
- * recordings carry an audio track and a card that starts talking when you tap
+ * Playback starts muted even though the click is a user gesture. Two of the
+ * three files carry an audio track and a card that starts talking when you tap
  * it is hostile; `controls` puts unmuting one click away.
+ *
+ * Nothing here animates on scroll, so `prefers-reduced-motion` needs no special
+ * case — the only motion on the page is footage the viewer asked to play.
  */
 export function ProductCapture({
   src,
+  poster,
   seconds,
   name,
-  captureLabel,
+  kindLabel,
   playLabel,
   className,
 }: {
   src: string;
+  poster: StaticImageData;
   seconds: number;
   name: string;
-  captureLabel: string;
+  kindLabel: string;
   playLabel: string;
   className?: string;
 }) {
-  const frameRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [armed, setArmed] = useState(false);
   const [active, setActive] = useState(false);
-
-  // Arm slightly before the card is on screen so the frame is already painted
-  // by the time it arrives, rather than popping in under the viewer.
-  useEffect(() => {
-    const el = frameRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setArmed(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "300px" },
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!active) return;
     const el = videoRef.current;
     if (!el) return;
 
-    // Runs after the element has re-rendered with its source, so the play call
-    // always has media to act on. Rejection is a normal outcome, not an error.
+    // Runs after the element has mounted, so the play call always has media to
+    // act on. A rejected play is a normal outcome, not an error worth raising.
     void el.play().catch(() => {});
 
     const observer = new IntersectionObserver(
@@ -88,41 +68,44 @@ export function ProductCapture({
 
   return (
     <div
-      ref={frameRef}
-      /* `dark` because the surface behind this is footage, not the page. Tokens
-         still resolve — to their dark values, which is what reads over video in
-         either theme — so nothing here needs a literal colour. */
+      /* `dark` because what sits behind this strip is footage, not the page.
+         Tokens still resolve — to their dark values, which is what reads over
+         video in either theme — so nothing here needs a literal colour. */
       className={cn(
         "dark group/frame relative aspect-video w-full overflow-hidden bg-background",
         className,
       )}
     >
-      <video
-        ref={videoRef}
-        // Deliberately not `src` until armed: an unarmed <video> touches the
-        // network for nothing.
-        src={armed || active ? `${src}#t=0.6` : undefined}
-        preload={active ? "auto" : "metadata"}
-        controls={active}
-        controlsList="nodownload"
-        playsInline
-        muted
-        // Until it is playing it is a thumbnail, and the button over it carries
-        // the accessible name. Once it has controls it needs its own.
-        tabIndex={active ? undefined : -1}
-        aria-hidden={active ? undefined : true}
-        aria-label={active ? `${captureLabel}: ${name}` : undefined}
-        className="size-full object-cover object-center"
+      {/* alt="" because it is one frame of the clip the button beside it already
+          names, sitting directly above the product's heading and blurb. There is
+          nothing here a screen reader user is missing. */}
+      <Image
+        src={poster}
+        alt=""
+        aria-hidden="true"
+        fill
+        placeholder="blur"
+        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        className="object-cover object-center"
       />
 
-      {active ? null : (
+      {active ? (
+        <video
+          ref={videoRef}
+          src={src}
+          controls
+          controlsList="nodownload"
+          playsInline
+          muted
+          preload="auto"
+          aria-label={`${kindLabel}: ${name}`}
+          className="absolute inset-0 size-full bg-background object-contain object-center"
+        />
+      ) : (
         <button
           type="button"
           onClick={() => setActive(true)}
-          className={cn(
-            "absolute inset-0 flex items-end",
-            "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
-          )}
+          className="absolute inset-0 flex items-end focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
         >
           <span className="sr-only">
             {playLabel}: {name}
@@ -131,7 +114,7 @@ export function ProductCapture({
           {/* Scrim, not a flat wash — a uniform overlay dulls the whole frame. */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/40 to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/50 to-transparent"
           />
 
           {/* Reads as an instrument strip along the bottom of the frame rather
@@ -140,13 +123,13 @@ export function ProductCapture({
             aria-hidden="true"
             className="relative flex w-full items-center gap-3 px-4 py-3.5"
           >
-            <span className="grid size-7 shrink-0 place-items-center rounded-sm border border-border bg-background/50 text-foreground transition-colors group-hover/frame:border-foreground/50">
+            <span className="grid size-7 shrink-0 place-items-center rounded-sm border border-border bg-background/60 text-foreground transition-colors group-hover/frame:border-foreground/50">
               <svg viewBox="0 0 10 10" className="size-2.5" fill="currentColor">
                 <path d="M2 0.6 9 5 2 9.4Z" />
               </svg>
             </span>
             <span className="font-mono text-[0.5625rem] uppercase tracking-[0.16em] text-muted-foreground">
-              {captureLabel}
+              {kindLabel}
             </span>
             <span className="ml-auto font-mono text-[0.6875rem] tabular-nums text-metric">
               {formatDuration(seconds)}

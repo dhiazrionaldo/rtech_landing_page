@@ -7,14 +7,14 @@ import type { Locale } from "@/content/i18n";
  * Named systems from the deck: Integrated HSSE System, OPTIGAIN, and the
  * Pertamina Fire Truck Simulator.
  *
- * Each card now leads with a real screen recording of that system running.
- * That is the proof this section was missing — for a skeptical ops director,
- * thirty seconds of a working command centre argues better than the blurb
- * underneath it. The recordings are click-to-play; see ProductCapture.
+ * Each card now leads with footage of that system. That is the proof this
+ * section was missing — for a skeptical ops director, seeing the software move
+ * argues better than the blurb underneath it. Click-to-play; see ProductCapture
+ * for why nothing autoplays.
  *
  * The blurbs stay, and carry the full claim on their own. Video is not
- * crawlable and a viewer may have media blocked, so nothing the recordings
- * show is asserted only by the recordings.
+ * crawlable and a viewer may have media blocked, so nothing the footage shows
+ * is asserted only by the footage.
  */
 export function Products({ locale }: { locale: Locale }) {
   const t = copy[locale];
@@ -40,9 +40,10 @@ export function Products({ locale }: { locale: Locale }) {
               {capture ? (
                 <ProductCapture
                   src={capture.src}
+                  poster={capture.poster}
                   seconds={capture.seconds}
                   name={product.name}
-                  captureLabel={t.products.captureLabel}
+                  kindLabel={t.products.captureKinds[capture.kind]}
                   playLabel={t.products.playLabel}
                   className="border-b border-border"
                 />

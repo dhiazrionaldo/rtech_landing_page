@@ -4,11 +4,10 @@ import { notFound } from "next/navigation";
 
 import "../globals.css";
 import { cn } from "@/lib/utils";
+import { StructuredData } from "@/components/seo/structured-data";
 import { htmlLang, isLocale, locales, type Locale } from "@/content/i18n";
 import { seo } from "@/content/copy";
-
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://rtechindo.com";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Archivo carries the display type. It has a real `wdth` axis (62–125), so the
@@ -77,6 +76,24 @@ export async function generateMetadata({
       title: meta.title,
       description: meta.description,
     },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        // Lets Google use the full OG image in results rather than a thumbnail,
+        // and stops it truncating the Indonesian description.
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+    // Set GOOGLE_SITE_VERIFICATION in Vercel to verify Search Console by meta
+    // tag. Omitted entirely when unset so we never ship an empty token.
+    verification: process.env.GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+      : undefined,
   };
 }
 
@@ -112,6 +129,7 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
+        <StructuredData locale={locale as Locale} />
         {children}
       </body>
     </html>
