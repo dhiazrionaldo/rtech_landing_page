@@ -218,11 +218,20 @@ export const copy: Record<Locale, Dict> = {
       { label: "Hubungi kami", href: "#kontak" },
     ],
     hero: {
-      badge: "Sejak 2018 — Oil & Gas, Aviation, Manufaktur",
-      headline: "Digitalisasi operasi kritikal, dari HSSE sampai command center.",
-      // Verbatim from the deck, slide "Tentang Kami".
+      badge: "Sejak 2018 — software agency lintas sektor",
+      // "dari lapangan sampai command center" replaces "dari HSSE sampai ...":
+      // HSSE reads as oil & gas to anyone outside it, while "lapangan" holds
+      // for a plant, a warehouse, or an apron. Keeps the command-center term,
+      // which is both a product name and a query the page ranks on.
+      headline:
+        "Digitalisasi operasi kritikal, dari lapangan sampai command center.",
+      // NOT verbatim from the deck any more. The deck line scoped the agency to
+      // Oil & Gas; that was costing cross-sector enquiries, so it was reworded
+      // with the client's explicit approval on 2026-08-10. Oil & Gas is now
+      // stated as where the work started, not the limit of it. The three
+      // sectors named are the three actually delivered — no others implied.
       standfirst:
-        "Berdiri sejak 2018 sebagai software agency yang berfokus pada solusi kritikal di industri Oil & Gas. Kami telah bertransformasi dari penyedia layanan menjadi mitra strategis digitalisasi.",
+        "Berdiri sejak 2018, membangun sistem untuk operasi yang tidak boleh berhenti. Kami mulai dari Oil & Gas, lalu Aviation dan manufaktur. Cara kerjanya sama di sektor mana pun.",
       mediaDescription:
         "Unit komputasi yang kami pasang di sisi operasional untuk menjalankan beban kerja inferensi.",
       panelTitle: "Integrated HSSE System",
@@ -247,9 +256,11 @@ export const copy: Record<Locale, Dict> = {
       mission:
         "Memberikan solusi teknologi yang adaptif, terintegrasi, dan berdampak nyata bagi operasional klien melalui inovasi berkelanjutan.",
       visionLabel: "Visi",
-      // Verbatim from the deck.
+      // Deck-verbatim except for the closing scope: "di industri energi
+      // nasional" → "operasi industri di Indonesia". Reworded with the client's
+      // explicit approval on 2026-08-10. Every other word is the deck's.
       vision:
-        "Menjadi pionir solusi digital berbasis AI yang mengoptimalkan efisiensi dan keamanan di industri energi nasional.",
+        "Menjadi pionir solusi digital berbasis AI yang mengoptimalkan efisiensi dan keamanan operasi industri di Indonesia.",
     },
     stats: [
       { value: "2018", label: "Berdiri sejak" },
@@ -311,10 +322,11 @@ export const copy: Record<Locale, Dict> = {
       { label: "Contact", href: "#kontak" },
     ],
     hero: {
-      badge: "Since 2018 — oil & gas, aviation, manufacturing",
-      headline: "Digitalising critical operations, from HSSE to the command centre.",
+      badge: "Since 2018 — a cross-sector software agency",
+      headline:
+        "Digitalising critical operations, from the field to the command centre.",
       standfirst:
-        "Founded in 2018 as a software agency focused on critical solutions in oil and gas. We have grown from a service provider into a strategic digitalisation partner.",
+        "Founded in 2018, building systems for operations that cannot stop. We started in oil and gas, then aviation and manufacturing. The way we work is the same in any sector.",
       mediaDescription:
         "A compute unit of the kind we deploy on site to run inference workloads.",
       panelTitle: "Integrated HSSE System",
@@ -339,7 +351,7 @@ export const copy: Record<Locale, Dict> = {
         "To deliver adaptive, integrated technology solutions with real operational impact for our clients, through continuous innovation.",
       visionLabel: "Vision",
       vision:
-        "To be the pioneer of AI-based digital solutions that improve efficiency and safety in Indonesia's national energy industry.",
+        "To be the pioneer of AI-based digital solutions that improve efficiency and safety in industrial operations across Indonesia.",
     },
     stats: [
       { value: "2018", label: "Founded" },
@@ -400,15 +412,24 @@ export const clients = [
   { name: "JAS", sector: "Aviation" },
 ] as const;
 
+/**
+ * Titles are deliberately sector-neutral: the agency takes work across
+ * industries, and naming energy in the title told both Google and a visitor
+ * from any other sector that they were in the wrong place.
+ *
+ * The narrow terms that actually rank — "digitalisasi HSSE", "command center
+ * operasional" — moved into the description rather than being dropped. The
+ * title reads broad; the description stays findable.
+ */
 export const seo: Record<Locale, { title: string; description: string }> = {
   id: {
-    title: "RTECH INDO — Digitalisasi operasi kritikal untuk industri energi",
+    title: "RTECH INDO — Digitalisasi operasi untuk industri Indonesia",
     description:
-      "Software agency asal Indonesia sejak 2018. Digitalisasi HSSE, command center operasional, integrasi ERP, dan sistem berbasis AI untuk Oil & Gas, Aviation, dan manufaktur.",
+      "Software agency asal Indonesia sejak 2018. Digitalisasi HSSE, command center operasional, integrasi ERP, dan sistem berbasis AI. Lintas sektor.",
   },
   en: {
-    title: "RTECH INDO — Digitalising critical operations for energy",
+    title: "RTECH INDO — Digitalising operations for Indonesian industry",
     description:
-      "An Indonesian software agency since 2018. HSSE digitalisation, operational command centres, ERP integration, and AI systems for oil and gas, aviation, and manufacturing.",
+      "An Indonesian software agency since 2018. HSSE digitalisation, operational command centres, ERP integration, and AI systems. Across sectors.",
   },
 };
