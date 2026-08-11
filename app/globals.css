@@ -14,6 +14,7 @@
   --font-mono: var(--font-mono-plex), ui-monospace, monospace;
   --font-heading: var(--font-display), var(--font-body), sans-serif;
   --color-metric: var(--metric);
+  --color-surface-brand: var(--surface-brand);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -97,6 +98,21 @@
      ramp. One semantic token instead of text-chart-4 dark:text-chart-1 everywhere. */
   --metric: var(--chart-4);
 
+  /* The plate a client mark sits on. White in BOTH themes, and deliberately not
+     redefined under .dark — that is the whole point of it.
+
+     These are other companies' real trademarks in their real brand colours, and
+     both wordmarks are dark ink: Pertamina's is near-black green, JAS's is navy.
+     On the dark-mode background they all but disappear. Recolouring someone
+     else's mark is not ours to do, so instead it gets the white ground it was
+     drawn for. Only applied in dark mode — on the white light-mode page the
+     plate would be invisible anyway, and skipping it there keeps the logo row's
+     spacing exactly as approved.
+
+     Not a new hue: this is oklch(1 0 0), the same white as the light-mode
+     --background. It needs its own name only because it must ignore the theme. */
+  --surface-brand: oklch(1 0 0);
+
   /* The machine's light spilling into the page. Derived from the teal ramp,
      no new hue. Only ever sits behind the hero media. */
   --glow-media: radial-gradient(
@@ -177,6 +193,34 @@
    teal ramp — not a decorative background gradient. */
 @utility media-glow {
   background-image: var(--glow-media);
+}
+
+/* Start states for scroll-revealed content.
+ *
+ * Scoped to `.js`, which the inline script in <head> adds before first paint.
+ * That ordering is the whole point: without it the server HTML paints visible
+ * and then blinks out the moment hydration sets opacity to 0. With it, anyone
+ * running JavaScript never sees the un-animated frame, and anyone without
+ * JavaScript — including a crawler rendering the raw HTML — sees fully visible
+ * content, because none of these rules ever match for them.
+ *
+ * Wrapped in `prefers-reduced-motion: no-preference` as a second, independent
+ * guarantee. The components already refuse to load GSAP under `reduce`, so this
+ * is belt and braces: even if the chunk never resolves, content is visible.
+ *
+ * Only `opacity` and `transform` — neither participates in layout, so nothing
+ * here can shift the page or cost CLS. */
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-reveal],
+  .js [data-reveal-group] > * {
+    opacity: 0;
+    transform: translateY(var(--reveal-y, 20px));
+    will-change: opacity, transform;
+  }
+
+  .js [data-rail] {
+    transform: scaleX(0);
+  }
 }
 
 @layer base {

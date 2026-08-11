@@ -4,6 +4,7 @@ import { About } from "@/components/sections/about";
 import { Contact } from "@/components/sections/contact";
 import { Expertise } from "@/components/sections/expertise";
 import { Hero } from "@/components/sections/hero";
+import { Process } from "@/components/sections/process";
 import { Products } from "@/components/sections/products";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { isLocale } from "@/content/i18n";
@@ -24,6 +25,10 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
         <About locale={locale} />
         <Expertise locale={locale} />
         <Products locale={locale} />
+        {/* Last before the CTA on purpose: the process section ends on "you can
+            stop at any boundary and keep what we built", which is the sentence
+            that makes booking a call cheap. */}
+        <Process locale={locale} />
         <Contact locale={locale} />
       </main>
       <SiteFooter locale={locale} />

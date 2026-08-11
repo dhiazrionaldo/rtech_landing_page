@@ -73,7 +73,11 @@ export function ApertureVideo({ className }: { className?: string }) {
         priority
         fill
         placeholder="blur"
-        sizes="100vw"
+        // Matches the hero's media column: full width until lg, where it
+        // becomes the 56% right-hand column. At 100vw the browser was told to
+        // fetch a desktop-width source for a slot barely half that wide, which
+        // is wasted bytes on the one image that is the LCP element.
+        sizes="(min-width: 1024px) 56vw, 100vw"
         className="object-contain object-center"
       />
 

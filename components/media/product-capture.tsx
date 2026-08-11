@@ -33,6 +33,8 @@ export function ProductCapture({
   name,
   kindLabel,
   playLabel,
+  client,
+  clientLabel,
   className,
 }: {
   src: string;
@@ -41,6 +43,9 @@ export function ProductCapture({
   name: string;
   kindLabel: string;
   playLabel: string;
+  /** Named client this system was built for, when there is one cleared to name. */
+  client?: string;
+  clientLabel: string;
   className?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -88,6 +93,34 @@ export function ProductCapture({
         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
         className="object-cover object-center"
       />
+
+      {/* Client banner across the head of the frame.
+
+          A sibling of the play button rather than a child of it, for two
+          reasons: inside the button its text would be swallowed into the
+          button's accessible name ("Play: Integrated HSSE System, Project for
+          Pertamina"), and out here it stays real content a screen reader and a
+          crawler both read. `pointer-events-none` so it never steals the click.
+
+          Hidden while the video plays — it would sit over the footage and over
+          the native controls' top edge. */}
+      {client && !active ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex p-3.5">
+          {/* A solid chip, not a scrim-and-text banner. A gradient was the first
+              attempt and it lost: the Fire Truck poster has its own title text
+              burned into the frame in red and white, and no fade dark enough to
+              beat that leaves the poster worth showing. A chip is legible over
+              any frame, and it echoes the play control at the other corner. */}
+          <p className="flex items-center gap-2 rounded-md border border-border bg-background/85 px-2.5 py-1.5">
+            <span className="font-mono text-[0.5625rem] uppercase tracking-[0.16em] text-muted-foreground">
+              {clientLabel}
+            </span>
+            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-foreground">
+              {client}
+            </span>
+          </p>
+        </div>
+      ) : null}
 
       {active ? (
         <video

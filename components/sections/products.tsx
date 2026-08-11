@@ -1,5 +1,5 @@
 import { ProductCapture } from "@/components/media/product-capture";
-import { Section, SectionHeader } from "@/components/section";
+import { DarkPanel, Section, SectionHeader } from "@/components/section";
 import { copy, productCaptures } from "@/content/copy";
 import type { Locale } from "@/content/i18n";
 
@@ -21,14 +21,17 @@ export function Products({ locale }: { locale: Locale }) {
 
   return (
     <Section id="produk" headingId="products-heading">
-      <SectionHeader
-        badge={t.products.badge}
-        heading={t.products.heading}
-        headingId="products-heading"
-        body={t.products.body}
-      />
+      {/* Glow on, unlike the About panel. Here it has a source: three lit
+          screens sitting on the panel, throwing light down into it. */}
+      <DarkPanel>
+        <SectionHeader
+          badge={t.products.badge}
+          heading={t.products.heading}
+          headingId="products-heading"
+          body={t.products.body}
+        />
 
-      <ul className="mt-10 grid gap-4 md:mt-14 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-16 grid gap-4 md:grid-cols-2 lg:mt-20 lg:grid-cols-3">
         {t.products.items.map((product) => {
           const capture = productCaptures[product.id];
 
@@ -45,29 +48,29 @@ export function Products({ locale }: { locale: Locale }) {
                   name={product.name}
                   kindLabel={t.products.captureKinds[capture.kind]}
                   playLabel={t.products.playLabel}
+                  client={product.client}
+                  clientLabel={t.products.clientLabel}
                   className="border-b border-border"
                 />
               ) : null}
 
               <div className="flex flex-1 flex-col gap-5 p-7 md:p-8">
-                <div className="flex items-start justify-between gap-4">
-                  <h3 className="font-heading text-lg font-medium tracking-[-0.01em] md:text-xl">
-                    {product.name}
-                  </h3>
-                  {product.client ? (
-                    <span className="shrink-0 rounded-full border border-border px-2.5 py-1 font-mono text-[0.5625rem] uppercase tracking-[0.14em] text-metric">
-                      {product.client}
-                    </span>
-                  ) : null}
-                </div>
+                {/* The client used to repeat as a pill here. With the banner on
+                    the frame directly above, two "PERTAMINA" labels landed
+                    within 60px of each other — the banner is the louder and
+                    better-placed of the two, so this row is just the name. */}
+                <h3 className="font-heading text-lg font-medium tracking-[-0.01em] md:text-xl">
+                  {product.name}
+                </h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   {product.blurb}
                 </p>
               </div>
             </li>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </ul>
+      </DarkPanel>
     </Section>
   );
 }

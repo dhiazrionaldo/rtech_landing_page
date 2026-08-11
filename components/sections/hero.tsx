@@ -1,5 +1,6 @@
 import { Logo } from "@/components/brand/logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { CountUp } from "@/components/motion/count-up";
 import { ApertureVideo } from "@/components/media/aperture-video";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ActionButton } from "@/components/ui/action-button";
@@ -98,8 +99,14 @@ export function Hero({ locale }: { locale: Locale }) {
                 <dt className="order-2 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground">
                   {stat.label}
                 </dt>
+                {/* tabular-nums matters here, not just for looks: without it a
+                    counter running 1→2→3 changes the row's width every frame. */}
                 <dd className="order-1 font-mono text-3xl tabular-nums text-metric">
-                  {stat.value}
+                  {stat.countUp ? (
+                    <CountUp value={Number(stat.value)} />
+                  ) : (
+                    stat.value
+                  )}
                 </dd>
               </div>
             ))}
