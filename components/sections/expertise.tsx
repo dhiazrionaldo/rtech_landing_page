@@ -37,12 +37,17 @@ export function Expertise({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="keahlian" headingId="expertise-heading">
+    <Section id="keahlian" headingId="expertise-heading" fieldX={0.28} fieldZoom={1.6}>
+      {/* No body. The paragraph here said the constraints differ by sector and
+          that everything listed was built rather than proposed — both of which
+          the three columns underneath demonstrate on their own. It was also the
+          third consecutive badge/heading/paragraph unit on the page, which is
+          the shape a reader stops reading. See the house-style note in
+          content/copy.ts. */}
       <SectionHeader
         badge={t.expertise.badge}
         heading={t.expertise.heading}
         headingId="expertise-heading"
-        body={t.expertise.body}
       />
 
       <Reveal

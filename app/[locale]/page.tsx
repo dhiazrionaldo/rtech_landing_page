@@ -6,6 +6,7 @@ import { Expertise } from "@/components/sections/expertise";
 import { Hero } from "@/components/sections/hero";
 import { Process } from "@/components/sections/process";
 import { Products } from "@/components/sections/products";
+import { Team } from "@/components/sections/team";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { isLocale } from "@/content/i18n";
 
@@ -23,6 +24,9 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
       <Hero locale={locale} />
       <main className="flex-1">
         <About locale={locale} />
+        {/* Directly under the mission and vision pair, which is where the
+            client asked for it. */}
+        <Team locale={locale} />
         <Expertise locale={locale} />
         <Products locale={locale} />
         {/* Last before the CTA on purpose: the process section ends on "you can

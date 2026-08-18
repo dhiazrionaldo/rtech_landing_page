@@ -20,15 +20,17 @@ export function Products({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="produk" headingId="products-heading">
+    <Section id="produk" headingId="products-heading" fieldX={-0.24} fieldZoom={1.8}>
       {/* Glow on, unlike the About panel. Here it has a source: three lit
           screens sitting on the panel, throwing light down into it. */}
       <DarkPanel>
+        {/* No body — the claim it carried ("we do not build systems for demos")
+            is now in the heading itself, in fewer words and where it will
+            actually be read. */}
         <SectionHeader
           badge={t.products.badge}
           heading={t.products.heading}
           headingId="products-heading"
-          body={t.products.body}
         />
 
         <ul className="mt-16 grid gap-4 md:grid-cols-2 lg:mt-20 lg:grid-cols-3">

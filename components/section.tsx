@@ -10,16 +10,34 @@ export function Section({
   headingId,
   children,
   className,
+  fieldX = 0,
+  fieldZoom = 1,
 }: {
   id?: string;
   headingId: string;
   children: React.ReactNode;
   className?: string;
+  /**
+   * Where this section wants the node field, as a fraction of viewport width.
+   * Positive pushes the field right, which means the copy reads against it on
+   * the left. Alternating the sign down the page is what produces the
+   * left/right rhythm in the reference.
+   */
+  fieldX?: number;
+  /** How close the field sits in this section. Rises monotonically down the page. */
+  fieldZoom?: number;
 }) {
   return (
     <section
       id={id}
       aria-labelledby={headingId}
+      // Read by NodeField, which blends every marked element by how near its
+      // centre is to the middle of the viewport. Declaring the pose here rather
+      // than listing section ids inside the canvas component means a new
+      // section joins the choreography by adding two props.
+      data-field-scene=""
+      data-field-x={fieldX}
+      data-field-zoom={fieldZoom}
       className={cn("scroll-mt-24 px-3 py-20 md:px-6 md:py-28", className)}
     >
       <div className="mx-auto w-full max-w-[1400px]">{children}</div>
@@ -72,7 +90,15 @@ export function DarkPanel({
   return (
     <div
       className={cn(
-        "dark relative overflow-hidden rounded-[1.5rem] border border-border bg-background text-foreground",
+        // Translucent, not opaque. The node field is a fixed layer behind the
+        // whole document now, and an opaque panel would punch a black hole in
+        // it four times down the page. At 72% the field still reads through as
+        // texture while body copy keeps its contrast.
+        //
+        // No `backdrop-blur` — CLAUDE.md bans glassmorphism, and a blurred
+        // panel over a moving field is the most expensive thing this page could
+        // ask a compositor to do.
+        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background/72 text-foreground",
         "px-6 py-16 md:rounded-[2rem] md:px-10 md:py-20 lg:px-14",
         className,
       )}
@@ -101,6 +127,8 @@ export function SectionHeader({
   aside?: React.ReactNode;
   className?: string;
 }) {
+  const hasSideColumn = Boolean(body || aside);
+
   return (
     <div className={cn("relative", className)}>
       {/* Scale marker: a short heavy segment against a hairline, the way a
@@ -113,7 +141,16 @@ export function SectionHeader({
       {/* Three tracks, not two. A label-plus-column layout leaves the right
           third of a 1400px page empty and the header reads as a fragment;
           setting the body copy as its own column beside the heading fills the
-          measure and gives the section a masthead rather than a title. */}
+          measure and gives the section a masthead rather than a title.
+
+          When there is nothing to put in the third track the heading takes the
+          space instead of leaving a hole. Two sections deliberately ship with
+          no body at all — five identical badge/heading/paragraph units in a row
+          is what made the page read as generated — and the point of dropping
+          the paragraph is lost if the layout still reserves a column for it.
+          Set larger there too: a short heading alone has to carry the section
+          on its own, so it gets the display size it can afford at that
+          length. */}
       <div className="grid gap-x-10 gap-y-8 pt-6 md:grid-cols-12 md:pt-8">
         <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground md:col-span-12 lg:col-span-2 lg:sticky lg:top-8 lg:self-start">
           {badge}
@@ -121,22 +158,34 @@ export function SectionHeader({
 
         <h2
           id={headingId}
-          className="font-heading text-[clamp(1.875rem,3.6vw,3.125rem)] font-medium leading-[1.05] tracking-[-0.025em] text-balance md:col-span-7 lg:col-span-6"
+          className={cn(
+            "font-heading font-medium leading-[1.05] tracking-[-0.025em] text-balance",
+            hasSideColumn
+              ? "text-[clamp(1.875rem,3.6vw,3.125rem)] md:col-span-7 lg:col-span-6"
+              // Eight columns, not ten. At ten a long heading ran to the right
+              // edge and a short one left half the row empty, so the two
+              // body-less sections read as two different layouts. Held to eight
+              // the long one wraps to two lines and the short one rags early on
+              // purpose, and both sit on the same right edge.
+              : "text-[clamp(2rem,4.4vw,3.75rem)] md:col-span-11 lg:col-span-8",
+          )}
         >
           {heading}
         </h2>
 
-        <div className="flex flex-col gap-6 md:col-span-5 lg:col-span-4 lg:pt-1.5">
-          {body ? (
-            // 16px, not 15px, and leading-[1.7]. This column carries the only
-            // explanatory prose in each section; at 15px in muted grey it sat
-            // right on the edge of comfortable and read as a caption.
-            <p className="text-base leading-[1.7] text-muted-foreground">
-              {body}
-            </p>
-          ) : null}
-          {aside}
-        </div>
+        {hasSideColumn ? (
+          <div className="flex flex-col gap-6 md:col-span-5 lg:col-span-4 lg:pt-1.5">
+            {body ? (
+              // 16px, not 15px, and leading-[1.7]. This column carries the only
+              // explanatory prose in each section; at 15px in muted grey it sat
+              // right on the edge of comfortable and read as a caption.
+              <p className="text-base leading-[1.7] text-muted-foreground">
+                {body}
+              </p>
+            ) : null}
+            {aside}
+          </div>
+        ) : null}
       </div>
     </div>
   );

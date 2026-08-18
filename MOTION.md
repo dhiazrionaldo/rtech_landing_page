@@ -29,11 +29,11 @@ page against the performance budget.
 
 | # | Element | Component | start | end | scrub | once | Properties |
 |---|---|---|---|---|---|---|---|
-| 1 | Mission / vision cards | `Reveal` in `about.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 20→0`, stagger 0.10s |
+| 1 | Mission / vision pull-quotes | `Reveal` in `about.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 20→0`, stagger 0.10s |
 | 2 | Three sector cards | `Reveal` in `expertise.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 20→0`, stagger 0.09s |
 | 3 | Four stage cards | `Reveal` in `process.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 20→0`, stagger 0.09s |
 | 4 | Process rail | `ScrubRail` in `process.tsx` | `top 75%` | `center center` | **0.6** | no | `scaleX 0→1`, origin left |
-| 5 | Contact reassurance cards | `Reveal` in `contact.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 14→0`, stagger 0.08s |
+| ~~5~~ | ~~Contact reassurance cards~~ | removed | — | — | — | — | The three cards are one static line of copy now. See the note in `content/copy.ts` on why three claims about our own candour was a formula. |
 | 6 | Stat counters (`3`, `10`) | `CountUp` in `hero.tsx` | `top 92%` | — | no | yes | integer 0→value over 1.1s |
 
 Trigger 4 is the only scrubbed animation on the page, and deliberately so. The
@@ -45,6 +45,94 @@ Trigger 6 skips the founding year on purpose. `2018` was never a quantity, and a
 year spinning like an odometer on a page whose argument is "we do not inflate
 numbers" is the wrong note. The flag lives on the stat data as `countUp` in
 `content/copy.ts`.
+
+## The node field
+
+| Element | Component | Driver | Range | Properties |
+|---|---|---|---|---|
+| Full-page node field — yaw | `NodeField` in `app/[locale]/layout.tsx` | `window.scrollY / (scrollHeight - innerHeight)` | 0 → 1 over the whole document | camera yaw `0 → 0.7π` |
+| Full-page node field — pose | `NodeField`, blended from `[data-field-scene]` | distance of each scene's centre from the viewport's centre | continuous | lateral offset and zoom |
+
+### Scene poses
+
+Each section declares where it wants the field via two props on `Section`
+(`fieldX`, `fieldZoom`), which become `data-field-x` / `data-field-zoom`. The
+hero carries the attributes directly. A new section joins the choreography by
+adding two props — there is no list of section ids inside the canvas component.
+
+| Scene | `fieldX` | `fieldZoom` | Copy reads |
+|---|---|---|---|
+| Hero | `0` | `1.0` | centred over the field |
+| About | `+0.28` | `1.3` | left |
+| Expertise | `-0.28` | `1.55` | right |
+| Products | `+0.24` | `1.8` | left |
+| Process | `-0.24` | `2.0` | right |
+| Contact | `0` | `2.3` | centred, closest framing |
+
+`fieldX` is a fraction of viewport width. The alternating sign is what produces
+the left/right rhythm in the supplied reference. Mobile takes 25% of the lateral
+travel — the full swing on a narrow screen throws most of the field off the edge.
+
+Poses are **blended, not switched**. Every marked element contributes a weight of
+`max(0, 1 - distance) ** 2` where distance is measured in viewport heights, so
+the nearest scene dominates while the next is already pulling. Hard boundaries
+were the first attempt and read as a cut the moment a section edge crossed the
+fold.
+
+Not a ScrollTrigger. It reads scroll position directly in its own rAF loop,
+which is why it does not appear in the table above — there is no GSAP timeline
+to record a scrub value for. It is `position: fixed`, so a single instance
+serves every section; the transform is driven by document progress rather than
+by any one section's, which is what makes it read as one object you travel past
+rather than an effect that restarts.
+
+Cost controls, all in the component:
+
+- `dpr` capped at 1.5.
+- 90 nodes on desktop, 34 below 768px, and no autonomous rotation on mobile —
+  scroll still moves it, the clock does not.
+- rAF stopped by IntersectionObserver off-screen and by `visibilitychange` in a
+  background tab.
+- `prefers-reduced-motion: reduce` never starts the loop. It paints one frame and
+  repaints on scroll only, so the field repositions but never animates by itself.
+- Edge testing is O(n²) per frame — 4,005 squared-distance checks at 90 nodes.
+  That is the number to watch if the node count is ever raised.
+
+**This is CLAUDE.md's banned motif #2.** It was requested, the conflict was put
+to the client, and the ban was overridden on 2026-08-18. The full note is at the
+top of `components/motion/node-field.tsx`.
+
+## The hero brain
+
+| Element | Component | Driver | Range | Properties |
+|---|---|---|---|---|
+| Hero brain — turn | `BrainField` in `hero.tsx` | `window.scrollY / window.innerHeight` | 0 → 1 over the first viewport | yaw `0 → 0.8rad` (~45°), drift `y −8%` |
+| Hero brain — sway | `BrainField` | clock | continuous | yaw `±0.1rad` |
+| Hero brain — pointer | `BrainField` | `pointermove` on `window` | continuous | parallax ±26px / ±18px, plus local node excitation within 190px |
+
+Geometry is real SVG path data — a cortex silhouette, cerebellum, stem and four
+gyri — sampled with `getPointAtLength`. Consecutive samples along a path are
+joined to draw the contour; nearby points on *different* paths are cross-linked,
+which is what makes it read as a network rather than a line drawing. Edges are
+computed once at mount because the shape is rigid, unlike the free field.
+
+Hidden below `lg`. On a narrow screen it lands under the copy, and the full-page
+field is already doing that job there.
+
+Three tuning notes, all of them mistakes worth not repeating:
+
+- **Yaw must stay small.** This is a side-view silhouette; past roughly 45° it
+  stops reading as a brain, and at 90° it is a vertical line. The idle sway is a
+  bounded `sin`, not an accumulating `time * k`, for exactly that reason.
+- **Progress is measured off the window, not the canvas rect.** The canvas is
+  135% of the card height and offset upward, so its own rect reported ~0.47 at
+  the top of the document and the brain arrived already three-quarters turned.
+- **Scale is 0.22, not 0.46.** The projection multiplies by `depth * 2.4`
+  downstream, so 0.46 spanned ~1200px inside a 760px canvas and only the middle
+  of the shape was ever on screen.
+
+**This is CLAUDE.md's banned "wireframe brains".** Requested directly and
+overridden on 2026-08-18, in the same conversation as the node-field override.
 
 ## Non-scroll motion
 

@@ -1,8 +1,7 @@
 import { Logo } from "@/components/brand/logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { BrainField } from "@/components/motion/brain-field";
 import { CountUp } from "@/components/motion/count-up";
-import { ApertureVideo } from "@/components/media/aperture-video";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ActionButton } from "@/components/ui/action-button";
 import { Pill } from "@/components/ui/pill";
 import { copy } from "@/content/copy";
@@ -10,33 +9,74 @@ import { isPending } from "@/content/pending";
 import type { Locale } from "@/content/i18n";
 
 /**
- * The hero is an inset rounded media card rather than a full-bleed band, which
- * is the reference layout's defining move: the page frames the media instead of
- * being interrupted by it.
+ * The hero, rebuilt against the Sony reference the client supplied.
  *
- * The card carries `dark` so it stays black in both themes — there is no
- * light-graded cut of the footage — and `isolate` so the media's screen
- * blending composites against the card and its glow, not the whole page.
+ * The reference's mechanic is a single object that stays on screen and
+ * transforms as you scroll, with copy composed around it — not a background
+ * loop playing under a page. Here that object is the node field, and the hero
+ * is its first scene: field full-bleed, headline centred over it, everything
+ * else arranged symmetrically around the centre line.
  *
- * Media sits in its own column on large screens and above the copy on small
- * ones, so text is never overlaid on the brightest part of the frame.
+ * ## What this replaced
+ *
+ * The `ApertureVideo` compute unit is gone from the hero. It was the page's one
+ * heavy element and the node field is now that, and CLAUDE.md allows the hero
+ * exactly one. Cutting it also removes the fabricated "AURA-7 / AI PROCESSOR /
+ * 3.2T FLOPS" spec sheet, which asserted an invented benchmark on a page whose
+ * argument is that we do not inflate numbers. The component still exists and is
+ * still wired for the product captures if it is ever wanted back.
+ *
+ * ## Layering
+ *
+ * glow → canvas → scrim → content, all inside the card's `isolate`. The scrim
+ * is what makes centred type legible over a field of ninety moving nodes; it is
+ * built from `--background` rather than a hardcoded black so it survives a
+ * theme change.
+ *
+ * The standfirst stays in two columns above `lg`. Centred composition does not
+ * change the fact that it is a seventy-word paragraph, and seventy words set
+ * centred in one column is a wall whatever else the page is doing.
  */
 export function Hero({ locale }: { locale: Locale }) {
   const t = copy[locale];
   const href = isPending(t.cta.href) ? undefined : t.cta.href;
 
   return (
-    <header className="px-3 pt-3 md:px-6 md:pt-6">
-      {/* The hairline is what makes the rounded card read in dark mode, where
-          the page and the card are both pure black and the shape would
-          otherwise disappear into a full-bleed band. */}
-      <div className="dark relative isolate flex min-h-[min(92svh,940px)] flex-col overflow-hidden rounded-[1.5rem] border border-border bg-background text-foreground md:rounded-[2rem]">
+    <header
+      data-field-scene=""
+      data-field-x={0}
+      data-field-zoom={1}
+      className="px-3 pt-3 md:px-6 md:pt-6"
+    >
+      <div className="relative isolate flex min-h-[min(92svh,940px)] flex-col overflow-hidden rounded-[1.5rem] border border-border md:rounded-[2rem]">
         <div aria-hidden="true" className="media-glow absolute inset-0" />
 
-        {/* Media. Own column on lg so the copy always sits on clean black. */}
-        <div className="pointer-events-none absolute inset-x-0 top-16 h-[38%] md:top-20 lg:inset-y-0 lg:left-auto lg:right-0 lg:h-full lg:w-[56%]">
-          <ApertureVideo className="absolute inset-0" />
+        {/* The brain. Hung off the right edge and deliberately oversized, so it
+            bleeds past the card rather than sitting inside it as a picture —
+            the reference's object is always larger than its frame. Hidden below
+            lg: on a narrow screen it lands under the copy, and the full-page
+            node field is already doing this job there.
+
+            `-translate-y-1/2 top-1/2` rather than `inset-y-0` because the shape
+            has to stay centred on the headline's optical line as the card grows
+            with the paragraph. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute right-[-12%] top-1/2 hidden h-[135%] w-[62%] -translate-y-1/2 lg:block"
+        >
+          <BrainField />
         </div>
+
+        {/* Scrim. Densest at the centre, where the headline sits, and at the
+            foot, where the stat rail does. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[radial-gradient(ellipse_52%_42%_at_center,var(--background)_5%,transparent_78%)] opacity-70"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent"
+        />
 
         <nav
           aria-label="Primary"
@@ -64,7 +104,6 @@ export function Hero({ locale }: { locale: Locale }) {
 
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher current={locale} />
-            <ThemeToggle />
             <ActionButton
               href={href ?? "#kontak"}
               className="hidden sm:inline-flex"
@@ -74,26 +113,31 @@ export function Hero({ locale }: { locale: Locale }) {
           </div>
         </nav>
 
-        <div className="relative z-10 mt-auto flex flex-col gap-10 p-4 pt-[38svh] md:p-6 lg:max-w-[52%] lg:pt-6">
-          <div className="flex flex-col items-start gap-6">
-            <Pill>{t.hero.badge}</Pill>
-            <h1 className="font-heading text-[clamp(2rem,4.6vw,4rem)] font-medium leading-[1.04] tracking-[-0.025em] text-balance">
-              {t.hero.headline}
-            </h1>
-            <p className="max-w-[52ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
-              {t.hero.standfirst}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <ActionButton href={href ?? "#kontak"}>{t.cta.primary}</ActionButton>
-              <ActionButton href="#keahlian" variant="outline">
-                {t.cta.secondary}
-              </ActionButton>
-            </div>
-          </div>
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-7 px-4 py-12 text-center md:px-6">
+          <Pill>{t.hero.badge}</Pill>
 
-          {/* Stat row. Every figure here is countable from the deck — founding
-              year, sector count, listed projects. Nothing is estimated. */}
-          <dl className="flex flex-wrap items-end gap-x-10 gap-y-6 border-t border-border pt-6">
+          <h1 className="max-w-[19ch] font-heading text-[clamp(2.25rem,5.6vw,4.5rem)] font-medium leading-[1.03] tracking-[-0.03em] text-balance">
+            {t.hero.headline}
+          </h1>
+
+          <p className="max-w-[62ch] text-left text-base leading-[1.7] text-muted-foreground lg:max-w-[64rem] lg:columns-2 lg:gap-x-14">
+            {t.hero.standfirst}
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <ActionButton href={href ?? "#kontak"}>{t.cta.primary}</ActionButton>
+            <ActionButton href="#keahlian" variant="outline">
+              {t.cta.secondary}
+            </ActionButton>
+          </div>
+        </div>
+
+        {/* Foot rail. Stats left, the one named system right — the reference
+            keeps its chrome pinned to the frame edges rather than stacked in
+            the middle, and it is what stops a centred hero reading as a
+            slide. */}
+        <div className="relative z-10 flex flex-wrap items-end justify-between gap-8 border-t border-border p-4 md:p-6">
+          <dl className="flex flex-wrap items-end gap-x-10 gap-y-6">
             {t.stats.map((stat) => (
               <div key={stat.label} className="flex flex-col gap-1">
                 <dt className="order-2 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground">
@@ -111,21 +155,19 @@ export function Hero({ locale }: { locale: Locale }) {
               </div>
             ))}
           </dl>
+
+          <aside className="hidden max-w-xs text-left lg:block">
+            <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-metric">
+              {t.hero.panelTitle}
+            </p>
+            <p className="mt-2 text-[0.8125rem] leading-relaxed text-muted-foreground">
+              {t.hero.panelBody}
+            </p>
+          </aside>
         </div>
 
-        {/* Solid panel, not frosted glass — CLAUDE.md bans glassmorphism over
-            blurred imagery, and a real surface reads sharper anyway. */}
-        <aside className="relative z-10 m-4 hidden max-w-xs rounded-2xl border border-border bg-card/95 p-5 md:m-6 lg:absolute lg:bottom-6 lg:right-6 lg:block">
-          <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-metric">
-            {t.hero.panelTitle}
-          </p>
-          <p className="mt-3 text-[0.8125rem] leading-relaxed text-muted-foreground">
-            {t.hero.panelBody}
-          </p>
-        </aside>
-
-        {/* The video is decorative and aria-hidden, so what it shows must exist
-            as crawlable text. */}
+        {/* The field is decorative and aria-hidden, so what it stands for has to
+            exist as crawlable text. */}
         <p className="sr-only">{t.hero.mediaDescription}</p>
       </div>
     </header>

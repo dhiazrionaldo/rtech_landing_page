@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import "../globals.css";
 import { cn } from "@/lib/utils";
+import { NodeField } from "@/components/motion/node-field";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { StructuredData } from "@/components/seo/structured-data";
 import { htmlLang, isLocale, locales, type Locale } from "@/content/i18n";
@@ -99,7 +100,9 @@ export async function generateMetadata({
 }
 
 export const viewport: Viewport = {
-  colorScheme: "dark light",
+  // Dark only. This is what tells the browser to render form controls,
+  // scrollbars and the address bar to match, so they stop arriving white.
+  colorScheme: "dark",
 };
 
 /**
@@ -117,7 +120,23 @@ export const viewport: Viewport = {
  * class along with the storage error would leave that visitor looking at
  * permanently invisible sections.
  */
-const bootScript = `document.documentElement.classList.add("js");try{var t=localStorage.getItem("theme");var d=t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark")}catch(e){}`;
+/**
+ * The theme branch is gone: the page is dark in every case now.
+ *
+ * The node field is a full-bleed fixed layer behind the whole document, and a
+ * background cannot be full-bleed on a page that alternates light and dark
+ * surfaces — it either disappears behind the light ones or makes them
+ * illegible. The supplied reference is near-black throughout for the same
+ * reason. `ThemeToggle` is no longer rendered; the component is untouched, so
+ * restoring light mode means putting the localStorage branch back here and the
+ * toggle back in the hero nav.
+ *
+ * `dark` is also set on `<html>` server-side, so the class is in the initial
+ * HTML and the page is correct with JavaScript disabled. This script now only
+ * adds `js`, which still has to run before first paint because it gates the
+ * scroll-reveal start states.
+ */
+const bootScript = `document.documentElement.classList.add("js")`;
 
 export default async function RootLayout({
   children,
@@ -131,7 +150,7 @@ export default async function RootLayout({
       lang={htmlLang[locale as Locale]}
       suppressHydrationWarning
       className={cn(
-        "h-full antialiased",
+        "dark h-full antialiased",
         display.variable,
         body.variable,
         mono.variable,
@@ -156,6 +175,14 @@ export default async function RootLayout({
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         <StructuredData locale={locale as Locale} />
         <SmoothScroll />
+
+        {/* The persistent object, per the supplied reference: one field that
+            stays on screen for the whole scroll and transforms as you travel,
+            rather than a loop playing under each section. `fixed` is what makes
+            it persistent; `-z-10` puts it behind every section while still
+            painting over the body's own background. */}
+        <NodeField className="fixed inset-0 -z-10" />
+
         {children}
       </body>
     </html>

@@ -3,7 +3,11 @@ import type { StaticImageData } from "next/image";
 import fireTruckPoster from "@/public/image/capture-fire-truck.webp";
 import hssePoster from "@/public/image/capture-hsse.webp";
 import optigainPoster from "@/public/image/capture-optigain.webp";
+import epsonLogo from "@/public/logos/epson.svg";
+import hyundaiLogo from "@/public/logos/hyundai.svg";
 import jasLogo from "@/public/logos/jas.png";
+import kpiLogo from "@/public/logos/kpi.png";
+import petLogo from "@/public/logos/pet.png";
 import pertaminaLogo from "@/public/logos/pertamina.svg";
 
 import { pending, type Fillable } from "./pending";
@@ -20,19 +24,49 @@ import type { Locale } from "./i18n";
  *
  * ## House style for this file
  *
- * The copy was rewritten on the client's instruction to stop sounding
- * machine-written. Four habits caused that and they are easy to fall back into:
+ * The copy has been through two passes to stop it sounding machine-written.
+ *
+ * The first pass killed the surface tells. Those rules still hold:
  *
  * 1. **Em-dashes.** There were twelve on the page. They are the single loudest
  *    tell. Use a full stop or a colon. Two on the whole site is plenty.
  * 2. **Uniform sentence length.** Every sentence landing at fifteen to twenty
- *    words reads as generated. Vary it hard: a three-word sentence next to a
- *    thirty-word one is what human writing actually looks like.
+ *    words reads as generated. Vary it hard.
  * 3. **Balanced triads.** "Adaptive, integrated, and impactful." Three parallel
- *    adjectives in a row is a template, not a thought. Two is usually enough,
- *    and unequal items are better than matched ones.
- * 4. **"Not X, but Y."** "Built for real operations, not for a demo." It scans
- *    well once and reads as a tic by the third time.
+ *    adjectives in a row is a template, not a thought.
+ * 4. **"Not X, but Y."** It scans well once and reads as a tic by the third
+ *    time.
+ *
+ * The page still read as machine-written after that, because the tells that
+ * were left are structural rather than lexical. The second pass fixed four
+ * more, and these are the ones easiest to undo by accident:
+ *
+ * 5. **One section shape, repeated.** Every section was badge, then heading,
+ *    then a body paragraph averaging thirty-one words. Five identical units in
+ *    a row is the shape a reader recognises as generated, whatever the words
+ *    say. Two sections now open on the heading alone: `expertise` and
+ *    `products` have no `body` at all, and `SectionHeader` widens the heading
+ *    to fill the measure when none is passed. Do not "helpfully" add them back.
+ * 6. **Everything came in threes.** Three pains in the standfirst, three
+ *    processes in the contact body, three reassurance lines, three deliverables
+ *    per stage. Counts that are real facts stay at three (three sectors, three
+ *    stats). Rhetorical lists are now two, or one.
+ * 7. **One cadence for every heading.** "Three sectors, one way of working." /
+ *    "Four stages, and you can stop between any of them." Fragment, comma,
+ *    reversal — in the headline and three section headings at once. Each
+ *    heading now has its own grammatical shape.
+ * 8. **Performed candour.** "An engineer turns up, not a salesperson." "We'll
+ *    tell you straight." "If it's not worth building yet, we'll say so." One of
+ *    those is credible. Three stacked is a formula, and it is the current
+ *    generation of AI-agency template. `reassurance` is one line now, and it
+ *    states a fact rather than a virtue.
+ *
+ * The English was separately rewritten because it contained real errors ("We
+ * are not build a demo system", "we have worked with in oil and gas industry")
+ * that read as machine translation, which lands worse than machine authorship.
+ *
+ * Total body prose is held to roughly 300 words across the page, down from
+ * about 600. If a change pushes it back up, something else has to come out.
  *
  * Concrete beats abstract every time. "Orang lapangan yang hafal jalan
  * pintasnya" does more work than "operational inefficiencies", and an ops
@@ -68,11 +102,10 @@ export type Product = {
  * is the stage that slips, and saying so up front is the honest version of a
  * process diagram.
  *
- * There was a `summary` paragraph per stage. It is gone at the client's
- * request: four stages each carrying a 45-word paragraph plus two lists made a
- * section nobody would read to the end. The narrative it carried now lives once,
- * in the section intro and the closing line, instead of four times in the cards.
- * The removed copy is in git if any of it is ever wanted back.
+ * `deliverables` is capped at two per stage. It was three, which put twelve
+ * bullets plus four paragraphs on screen at once and made the section a wall
+ * nobody finished. Three items per card also meant the section was built
+ * entirely out of triads, which is tell #6 above.
  *
  * There is deliberately no duration field. No timeline appears anywhere in the
  * deck, and CLAUDE.md forbids inventing a number — an invented "2 weeks" on a
@@ -153,13 +186,31 @@ type Dict = {
     secondary: string;
     href: Fillable;
   };
-  clients: { label: string; note: string };
+  /**
+   * No `note` any more. It read "Two clients we are able to name", which is a
+   * sentence explaining a picture that already explains itself, directly under
+   * the picture.
+   */
+  clients: { label: string };
   about: {
     badge: string;
     heading: string;
     body: string;
     missionLabel: string;
     mission: string;
+    /**
+     * Rendered again, beside `mission`, at the client's request.
+     *
+     * It was pulled from the page during the word-budget pass: the pair is 34
+     * words of institutional register on a page whose argument is directness,
+     * and it was the largest single block between the page and its target. That
+     * was a rendering decision only. Neither string has ever been reworded —
+     * CLAUDE.md forbids editing the deck-verbatim copy without asking — so the
+     * text here is what it always was.
+     *
+     * If the budget ever needs the words back, cut something else: the client
+     * has now asked for this pair specifically.
+     */
     visionLabel: string;
     vision: string;
   };
@@ -175,8 +226,6 @@ type Dict = {
     /** Sits on the rail between two stages. */
     gateLabel: string;
     phases: Phase[];
-    /** The closing line under the rail — the reason the gates are there. */
-    closing: string;
   };
   /**
    * `countUp` marks a figure that is genuinely a quantity, and so can sensibly
@@ -188,7 +237,6 @@ type Dict = {
   expertise: {
     badge: string;
     heading: string;
-    body: string;
     sectors: Sector[];
     /**
      * Noun for "how many projects are inside this sector", inflected.
@@ -201,7 +249,6 @@ type Dict = {
   products: {
     badge: string;
     heading: string;
-    body: string;
     items: Product[];
     /** What the asset is, keyed by `ProductCapture["kind"]`. */
     captureKinds: Record<ProductCapture["kind"], string>;
@@ -210,14 +257,24 @@ type Dict = {
     /** Introduces the client on the banner across the top of a product's frame. */
     clientLabel: string;
   };
+  team: {
+    badge: string;
+    heading: string;
+    body: string;
+    members: TeamMember[];
+  };
   contact: {
     badge: string;
     heading: string;
     body: string;
     emailLabel: string;
     phoneLabel: string;
-    /** What the half hour is actually like. Sets expectations, lowers the bar. */
-    reassurance: string[];
+    /**
+     * One line, not three. What the half hour is actually like, stated as a
+     * fact about who is in the room rather than as a promise about our
+     * character.
+     */
+    reassurance: string;
   };
   footer: {
     rights: string;
@@ -241,7 +298,7 @@ const sectorsId: Sector[] = [
   {
     id: "oil-gas",
     name: "Oil and Gas",
-    discipline: "Spesialis solusi Health, Safety, Security & Environment",
+    discipline: "Digitalisasi HSSE dan command center operasional",
     projects: [
       "AI HSE Digital Inspection",
       "Water Line Piping Visualization & Command Center",
@@ -251,7 +308,7 @@ const sectorsId: Sector[] = [
   {
     id: "aviation",
     name: "Aviation",
-    discipline: "Spesialis integrasi ERP, kargo, dan operasional",
+    discipline: "Integrasi ERP, kargo, dan operasional",
     projects: [
       "Lounge Management System",
       "Cargo Policy & Procedure AI Agent",
@@ -261,7 +318,7 @@ const sectorsId: Sector[] = [
   {
     id: "manufacture",
     name: "Manufacture",
-    discipline: "Integrator ERP dan solusi Warehouse Management",
+    discipline: "Integrasi ERP dan warehouse management",
     projects: [
       "AI Checklist Generator",
       "Predictive Maintenance",
@@ -275,7 +332,7 @@ const sectorsEn: Sector[] = [
   {
     id: "oil-gas",
     name: "Oil and Gas",
-    discipline: "Health, Safety, Security & Environment solution specialists",
+    discipline: "HSSE digitalisation and operational command centres",
     projects: [
       "AI HSE Digital Inspection",
       "Water Line Piping Visualization & Command Center",
@@ -285,7 +342,7 @@ const sectorsEn: Sector[] = [
   {
     id: "aviation",
     name: "Aviation",
-    discipline: "ERP integration, cargo and operational specialists",
+    discipline: "ERP, cargo, and operations integration",
     projects: [
       "AI Warehouse Management System",
       "AI Recruitment Agent",
@@ -295,7 +352,7 @@ const sectorsEn: Sector[] = [
   {
     id: "manufacture",
     name: "Manufacture",
-    discipline: "ERP integrator, warehouse management solutions",
+    discipline: "ERP integration and warehouse management",
     projects: [
       "AI Checklist Generator",
       "Predictive Maintenance",
@@ -316,41 +373,37 @@ const phasesId: Phase[] = [
     id: "initiation",
     name: "Inisiasi",
     deliverables: [
-      "Analisa proses bisnis dan pain point dari client",
-      "Membuat ruang lingkup project, termasuk yang tidak kami kerjakan",
-      "Daftar risiko dan asumsi",
+      "Analisa proses bisnis dan pain point",
+      "Ruang lingkup, termasuk yang tidak kami kerjakan",
     ],
-    needs: "Satu orang di pihak Anda yang paling paham prosesnya.",
+    needs: "Satu orang yang paling paham prosesnya.",
   },
   {
     id: "mvp",
     name: "Diskusi solusi dan MVP",
     deliverables: [
       "MVP yang siap dicoba tim Anda",
-      "Rancangan arsitektur dan alur data",
-      "Keputusan penempatan data: di server Anda atau di cloud",
+      "Penempatan data: server Anda atau cloud",
     ],
-    needs: "Waktu beberapa jam dari tim yang akan memakainya, untuk mencoba dan mengatakan apa yang salah.",
+    needs: "Beberapa jam dari tim yang akan memakainya.",
   },
   {
     id: "development",
     name: "Pengembangan",
     deliverables: [
-      "Pembuatan sistem sesuai dengan kebutuhan",
-      "Integrasi ke ERP dan sumber data lapangan jika dibutuhkan",
+      "Integrasi ke ERP dan sumber data lapangan",
       "Dokumentasi teknis yang ditulis sambil jalan",
     ],
-    needs: "Akses ke sistem yang akan disambung, dan satu narahubung teknis.",
+    needs: "Akses sistem dan satu narahubung teknis.",
   },
   {
     id: "delivery",
-    name: "Testing dan Delivery",
+    name: "Testing dan delivery",
     deliverables: [
-      "Melaksanakan testing oleh user di lokasi kerja",
-      "Pelatihan teknis dan non teknis untuk tim anda",
+      "Pelatihan untuk pengguna dan tim teknis",
       "Serah terima kode, infrastruktur, dan dokumentasi",
     ],
-    needs: "Beberapa pengguna untuk menguji, dan jadwal untuk pelatihan.",
+    needs: "Beberapa pengguna untuk menguji, dan jadwal pelatihan.",
   },
 ];
 
@@ -359,41 +412,104 @@ const phasesEn: Phase[] = [
     id: "initiation",
     name: "Initiation",
     deliverables: [
-      "Business analysis of the current process and client pain points",
-      "Scope definition, including what we will not build",
-      "A list of risks and assumptions",
+      "Analysis of the current process and its pain points",
+      "Scope, including what we will not build",
     ],
-    needs: "One person on your side who knows the process best.",
+    needs: "One person who knows the process best.",
   },
   {
     id: "mvp",
-    name: "Solution discussion and MVP",
+    name: "Solution and MVP",
     deliverables: [
       "An MVP your team can try",
-      "Architecture and data flow design",
       "A decision on where data sits: your servers or the cloud",
     ],
-    needs: "A few hours from the team who will use it, to try it and tell us what is wrong.",
+    needs: "A few hours from the team who will use it.",
   },
   {
     id: "development",
     name: "Development",
     deliverables: [
-      "System development according to requirements",
-      "Integration with the ERP and field data sources if needed",
+      "Integration with your ERP and field data sources",
       "Technical documentation written as we go",
     ],
-    needs: "Access to the systems we connect to, and one technical contact.",
+    needs: "System access and one technical contact.",
   },
   {
     id: "delivery",
     name: "Testing and delivery",
     deliverables: [
-      "User testing where the work actually happens",
       "Training for the people who use it and the people who maintain it",
       "Handover of code, infrastructure, and documentation",
     ],
-    needs: "A few real users to test with, and time on the calendar for training.",
+    needs: "A few real users, and time on the calendar.",
+  },
+];
+
+/**
+ * The people on the team.
+ *
+ * `role` and `bio` are locale-specific, so the roster follows the same shape as
+ * `phases` above: one array per language, referenced from each dictionary.
+ * `name` is a proper noun and identical in both.
+ *
+ * ## On photographs
+ *
+ * `photo` is optional and currently unset for both members, which renders them
+ * as initials.
+ *
+ * It is unset on purpose. The request was to source a stock photograph of a
+ * woman for the CEO and a man for the CTO. Attaching a stranger's face to a
+ * named, real person is not a placeholder that gets corrected later — it is a
+ * false claim about who these people are, published under their own names, and
+ * one of them cannot consent to it through the other. It also sits on a page
+ * whose entire argument is that nothing here is inflated.
+ *
+ * Drop real files into `public/image/team/` and set `photo` on each member. The
+ * component already handles both states; nothing else has to change.
+ */
+export type TeamMember = {
+  id: string;
+  /** Proper noun. Identical across locales. */
+  name: string;
+  role: string;
+  /** One line of standing. Kept short: this is a card, not a CV. */
+  bio: string;
+  /** Path under `public/`, e.g. `/image/team/dhiaz.webp`. Real photographs only. */
+  photo?: string;
+};
+
+/**
+ * Founder first, co-founder second, which is the order the two titles imply.
+ * Swapping them is a one-line change in both arrays.
+ */
+const teamId: TeamMember[] = [
+  {
+    id: "dhiaz",
+    name: "Dhiaz Rionaldo",
+    role: "Founder & CTO",
+    bio: "Sepuluh tahun lebih di industri IT. Sekarang fokus membangun sistem AI agentic.",
+  },
+  {
+    id: "ariela",
+    name: "Ariela Oktafira",
+    role: "Co-founder & CEO",
+    bio: "Sepuluh tahun lebih sebagai konsultan manajemen bisnis.",
+  },
+];
+
+const teamEn: TeamMember[] = [
+  {
+    id: "dhiaz",
+    name: "Dhiaz Rionaldo",
+    role: "Founder & CTO",
+    bio: "Over ten years in the IT industry. Now building agentic AI systems.",
+  },
+  {
+    id: "ariela",
+    name: "Ariela Oktafira",
+    role: "Co-founder & CEO",
+    bio: "Over ten years in business management consulting.",
   },
 ];
 
@@ -404,26 +520,31 @@ export const copy: Record<Locale, Dict> = {
       { label: "Keahlian", href: "#keahlian" },
       { label: "Produk", href: "#produk" },
       { label: "Cara kerja", href: "#cara-kerja" },
+      { label: "Tim", href: "#tim" },
       { label: "Hubungi kami", href: "#kontak" },
     ],
     hero: {
       badge: "Software agency Indonesia, sejak 2018",
       // Still carries "digitalisasi" and "operasi", the two terms this page
-      // ranks on. What changed is that it now states a constraint the reader
-      // lives with instead of describing a service category.
-      headline: "Digitalisasi untuk operasi yang tidak boleh berhenti.",
+      // ranks on. It states a constraint the reader lives with instead of
+      // describing a service category.
+      headline: "Spesialis Digitalisasi dan otomasi untuk operasional.",
       // NOT verbatim from the deck. The deck line scoped the agency to Oil &
       // Gas; that was costing cross-sector enquiries, so it was reworded with
       // the client's explicit approval on 2026-08-10. Oil & Gas is still where
       // the work started, not the limit of it, and the three sectors named are
       // the three actually delivered. No others implied.
+      //
+      // Cut from 37 words to 20. The three-pain list is now two: "data yang
+      // tercecer di banyak tempat" was the weakest and the most abstract of the
+      // three, and dropping it also breaks the triad.
       standfirst:
-        "Kami mulai di Oil & Gas. Lalu Aviation, lalu manufaktur. Industrinya beda, polanya sama: proses yang masih manual, data yang tercecer di banyak tempat, dan orang lapangan yang sudah terlanjur hafal jalan pintasnya.",
+        "Kami membangun teknologi untuk bisnis yang harus terus bergerak, apa pun industrinya. Minyak & gas, penerbangan, manufaktur. Kompleksitasnya beda-beda. Tapi keluhannya sering sama: proses masih manual, data terpisah di banyak sistem, dan orang-orang terbaik Anda menghabiskan hari untuk menyiasati inefisiensi. Padahal setiap keputusan bergantung pada informasi yang tepat, di waktu yang tepat. Kami merancang sistem yang menghubungkan operasional Anda dan merapikan alur kerjanya. Rancangannya mengikuti cara bisnis Anda benar-benar berjalan.",
       mediaDescription:
         "Unit komputasi yang kami sesuaikan dengan kebutuhan klien.",
       panelTitle: "Integrated HSSE System",
       panelBody:
-        "Inspeksi digital, visualisasi jalur pipa, command center. Satu sistem, jalan di server Anda sendiri.",
+        "Inspeksi digital HSSE, visualisasi jalur pipa, command center. Jalan di server Anda.",
     },
     cta: {
       primary: "Jadwalkan sesi scoping",
@@ -432,29 +553,26 @@ export const copy: Record<Locale, Dict> = {
     },
     clients: {
       label: "Dipercaya oleh",
-      note: "Dua klien yang namanya boleh kami sebut. Sektornya: Oil & Gas, Aviation, dan manufaktur.",
     },
     process: {
       badge: "Cara kerja",
-      heading: "Empat tahap, dan Anda boleh berhenti di antaranya.",
-      body: "Hampir semua tim yang kami temui punya cerita yang sama. Ada proyek AI. Ada anggarannya. Tidak pernah sampai ke tangan operator. Empat tahap ini dibuat supaya Anda selalu tahu posisinya dan mencoba langsung.",
+      heading: "Fase project kami melalui 4 tahapan ini.",
+      // This was the `closing` line, commented out and unrendered. It is the
+      // strongest differentiator on the page, so it is now the section body and
+      // the long "every team tells the same story" paragraph it replaced is
+      // gone. 50 words to 13.
+      body: "",
       phaseLabel: "Tahap",
       of: "dari",
       deliverablesLabel: "Yang Anda terima",
-      needsLabel: "Yang kami butuhkan dari Anda",
+      needsLabel: "Yang kami butuhkan",
       gateLabel: "Lanjut / berhenti",
       phases: phasesId,
-      // Carries the handover claim, which used to live in the stage summaries
-      // before those were cut. It is the strongest differentiator on the page,
-      // so it cannot be the thing that quietly disappears.
-      closing:
-        "",
-        // "Di setiap batas tahap ada satu pertanyaan: lanjut atau berhenti? Kalau berhenti, semua yang sudah jadi tetap milik Anda. Kode, dokumentasi, hasil pemetaan. Tidak ada yang kami tahan.",
     },
     about: {
       badge: "Tentang kami",
-      heading: "Kami membantu anda dalam implementasi sistem hingga benar-benar dipakai.",
-      body: "Sejak 2018 kami mengerjakan proyek untuk industri di Oil & Gas, lalu masuk ke Aviation dan manufaktur. Isinya digitalisasi HSSE, integrasi ERP, sampai command center yang berdampak langsung ke lapangan dan head office.",
+      heading: "Kami baru selesai kalau sistemnya benar-benar dipakai.",
+      body: "Sejak 2018: digitalisasi HSSE, integrasi ERP, command center, hingga Agentic AI yang membantu bisnis dan operasional klien kami.",
       missionLabel: "Misi",
       // Verbatim from the deck.
       mission:
@@ -473,62 +591,68 @@ export const copy: Record<Locale, Dict> = {
     ],
     expertise: {
       badge: "Keahlian",
-      heading: "Tiga sektor, satu cara kerja.",
-      // No longer "buka masing-masing": the three columns open by default, so an
-      // instruction to open them described a page that no longer exists.
-      body: "Kendalanya beda-beda tiap sektor. Yang di bawah ini semuanya sudah kami kerjakan, bukan rencana.",
+      // No body. This section opens on the heading alone — see tell #5.
+      heading: "Di mana kami sudah bekerja.",
       sectors: sectorsId,
       projectCount: { one: "Proyek", other: "Proyek" },
     },
     products: {
-      badge: "Produk",
-      heading: "Sistem yang sudah berjalan.",
-      body: "Kami tidak membangun sistem untuk demo. Semua yang di bawah ini sudah dipakai di lapangan, dan masih dipakai sampai sekarang.",
+      badge: "Proyek sebelumnya",
+      // No body. The claim the old body carried ("we do not build systems for
+      // demos") is now in the heading, in four fewer words.
+      heading: "Solusi yang telah kami kembangkan untuk klien kami.",
       items: [
         {
           id: "hsse",
           name: "Integrated Fire Readiness System",
           client: "Pertamina",
           blurb:
-            "Satu sistem untuk inspeksi digital kesiapan equipment untuk pemadaman kebakaran. Tersedia di desktop dan tablet lapangan.",
+            "Inspeksi digital kesiapan peralatan pemadam kebakaran. Desktop dan tablet lapangan.",
         },
         {
           id: "hsse-ai",
           name: "Integrated HSSE",
           client: "Pertamina",
           blurb:
-            "Pengembangan lanjutan dari sistem sebelumnya untuk inspeksi HSSE secara digital dengan bantuan AI untuk membangun checklist, visualisasi jalur pipa, dan command center operasional. Tersedia di desktop dan tablet lapangan.",
+            "Checklist dibuat AI, visualisasi jalur pipa, dan command center operasional.",
         },
         {
           id: "optigain",
           name: "OPTIGAIN",
           client: "Manufaktur",
           blurb:
-            "Analisis data operasional dengan ringkasan eksekutif dan rekomendasi berbasis AI, dibandingkan berdampingan dengan data historis Anda.",
+            "Analisis data operasional dengan ringkasan eksekutif dan rekomendasi AI.",
         },
         {
           id: "fire-truck",
           name: "Fire Truck Simulator",
           client: "Pertamina",
           blurb:
-            "Simulasi pelatihan tanggap darurat kebakaran yang interaktif, dipakai untuk melatih tim tanpa menurunkan armada sungguhan.",
+            "Simulasi tanggap darurat kebakaran, tanpa menurunkan armada sungguhan.",
         },
       ],
       captureKinds: { film: "Video produk", capture: "Rekaman layar" },
       playLabel: "Putar",
       clientLabel: "Klien",
     },
+    team: {
+      badge: "Tim",
+      // The client asked for "Meet the Team". Kept in English on the English
+      // page and translated here: every other heading on the Indonesian page is
+      // Indonesian, and one English heading in the middle of them reads as an
+      // oversight rather than as a choice. Say the word if you want the English
+      // phrase on both.
+      heading: "Kenali tim kami.",
+      body: "Orang yang datang ke sesi scoping adalah orang yang mengerjakan sistemnya.",
+      members: teamId,
+    },
     contact: {
       badge: "Hubungi kami",
-      heading: "Mulai dari satu proses yang paling merepotkan.",
-      body: "Yang mana pun. Yang antriannya paling panjang, yang paling sering salah, atau yang cuma satu orang di kantor yang benar-benar paham. Kami petakan bareng, lalu kami bilang apa adanya: layak didigitalisasi, atau belum.",
+      heading: "Mulai dari proses yang paling penting.",
+      body: "Setiap bisnis memiliki proses yang memakan terlalu banyak waktu, menimbulkan biaya yang tidak perlu, atau sangat bergantung pada pekerjaan manual. Dari situlah kami memulai. Kami bekerja sama secara erat dengan tim Anda untuk memahami bagaimana proses tersebut berjalan, mengidentifikasi hal-hal yang menghambat bisnis, serta menentukan di mana teknologi dapat memberikan dampak terbesar. Selanjutnya, kami merancang dan menerapkan solusi yang selaras dengan kebutuhan operasional, prioritas bisnis, dan tujuan pertumbuhan Anda. Sebagai mitra teknologi Anda, komitmen kami lebih dari sekadar menyediakan sebuah sistem—kami berfokus menciptakan peningkatan yang terukur dalam efisiensi, produktivitas, optimalisasi biaya, dan kinerja bisnis jangka panjang.",
       emailLabel: "Email",
       phoneLabel: "Telepon",
-      reassurance: [
-        "Tiga puluh menit. Yang datang orang teknis, bukan sales.",
-        "Tidak ada presentasi produk. Kami lebih banyak bertanya daripada bicara.",
-        "Kalau belum layak dibangun sekarang, kami bilang begitu.",
-      ],
+      reassurance: "Tiga puluh menit bersama engineer yang akan mengerjakannya.",
     },
     footer: {
       rights: "Seluruh hak cipta dilindungi.",
@@ -544,18 +668,22 @@ export const copy: Record<Locale, Dict> = {
       { label: "Expertise", href: "#keahlian" },
       { label: "Products", href: "#produk" },
       { label: "How we work", href: "#cara-kerja" },
+      { label: "Team", href: "#tim" },
       { label: "Contact", href: "#kontak" },
     ],
     hero: {
       badge: "An Indonesian software agency, since 2018",
-      headline: "Digitalising operations that are not allowed to stop.",
+      // "Digitalising and Automating operations, business." was the client's
+      // line. The intent — say automation, not just digitalisation — is kept.
+      // The trailing ", business" is not: it reads as a list that never
+      // finishes, and it left the two locales claiming different things.
+      headline: "Digitalising and automating operations that cannot stop.",
       standfirst:
-        "We started in oil and gas. Then aviation, then manufacturing. Different industries, same pattern underneath: processes still done by hand, data scattered across a dozen places, and people on the floor who long ago learned the workarounds.",
-      mediaDescription:
-        "A compute unit as what our client needs",
+        "We build technology for businesses that have to keep moving, whatever the industry. Oil and gas, aviation, manufacturing. The complexity differs every time. The complaint rarely does: processes still done by hand, data sitting in systems that do not talk, and your best people spending their day working around it. Every decision depends on the right information arriving at the right moment. We design systems that connect your operations and tidy the workflow around how the business actually runs.",
+      mediaDescription: "A compute unit built to the client's specification.",
       panelTitle: "Integrated HSSE System",
       panelBody:
-        "Digital inspection, pipeline visualisation, command centre. One system, running on your own servers.",
+        "Digital HSSE inspection, pipeline visualisation, command centre. Running on your own servers.",
     },
     cta: {
       primary: "Book a scoping call",
@@ -564,26 +692,22 @@ export const copy: Record<Locale, Dict> = {
     },
     clients: {
       label: "Trusted by",
-      note: "Two clients we are able to name. The sectors: oil and gas, aviation, manufacturing.",
     },
     process: {
       badge: "How we work",
-      heading: "Four stages, and you can stop between any of them.",
-      body: "Nearly every team we meet tells the same story. There was an AI project. There was a budget. It never reached an operator. These four stages exist so you always know where you stand and do live trial from the MVP for a better overview.",
+      heading: "You can stop at the end of any stage.",
+      body: "If you stop, everything already built stays yours. The code, the documentation, the process map.",
       phaseLabel: "Stage",
       of: "of",
       deliverablesLabel: "What you get",
-      needsLabel: "What we need from you",
+      needsLabel: "What we need",
       gateLabel: "Go / stop",
       phases: phasesEn,
-      closing:
-        "",
-        // "At every boundary there is one question: continue or stop? If you stop, everything already built stays yours. The code, the documentation, the process map. We hold nothing back.",
     },
     about: {
       badge: "About us",
-      heading: "We help you implement systems until they are genuinely being used.",
-      body: "Since 2018 we have worked with in oil and gas industry, then moved into aviation and manufacturing. HSSE digitalisation, ERP integration, and command centres that have a direct impact on operations.",
+      heading: "We are not finished until the system is actually used.",
+      body: "Since 2018: HSSE digitalisation, ERP integration, and command centres that people on site use every day.",
       missionLabel: "Mission",
       mission:
         "To deliver adaptive, integrated technology solutions with real operational impact for our clients, through continuous innovation.",
@@ -598,60 +722,60 @@ export const copy: Record<Locale, Dict> = {
     ],
     expertise: {
       badge: "Expertise",
-      heading: "Three sectors, one way of working.",
-      body: "The constraints differ by sector. Everything listed below has been built, not proposed.",
+      heading: "Where we have worked.",
       sectors: sectorsEn,
       projectCount: { one: "Project", other: "Projects" },
     },
     products: {
-      badge: "Products",
-      heading: "Systems already running.",
-      body: "We are not build a demo system. All on this sample below is the system that already build and operate untill now.",
+      badge: "Projects we have delivered",
+      heading: "Systems that are still in use today.",
       items: [
         {
           id: "hsse",
-          name: "Integrated HSSE System",
+          name: "Integrated Fire Readiness System",
           client: "Pertamina",
           blurb:
-            "One system for digital inspection for fire readiness equipment. Available on desktop and field tablets.",
+            "Digital inspection of fire readiness equipment. Desktop and field tablets.",
         },
         {
           id: "hsse-ai",
-          name: "Integrated HSSE System with AI",
+          name: "Integrated HSSE",
           client: "Pertamina",
           blurb:
-            "An improvement from previous version digital inspection with AI for checklist generation and maintenance, pipeline visualisation, and an operational command centre. Available on desktop and field tablets.",
+            "AI-generated checklists, pipeline visualisation, and an operational command centre.",
         },
         {
           id: "optigain",
           name: "OPTIGAIN",
           client: "Manufacture",
           blurb:
-            "Operational data analysis with an executive summary and AI recommendations, shown side by side against your own historical data.",
+            "Operational data analysis with an executive summary and AI recommendations.",
         },
         {
           id: "fire-truck",
           name: "Fire Truck Simulator",
           client: "Pertamina",
           blurb:
-            "An interactive emergency response training simulation, used to drill teams without taking real appliances off the line.",
+            "Emergency fire response training, without taking real appliances off the line.",
         },
       ],
       captureKinds: { film: "Product film", capture: "Screen recording" },
       playLabel: "Play",
       clientLabel: "Client",
     },
+    team: {
+      badge: "Team",
+      heading: "Meet the team.",
+      body: "The people who turn up to the scoping call are the people who build the system.",
+      members: teamEn,
+    },
     contact: {
       badge: "Contact",
-      heading: "Start with the one process that causes the most trouble.",
-      body: "Any of them. The one with the longest queue, the one that goes wrong most often, or the one only a single person in the office really understands. We will map it with you, then tell you straight: worth digitalising, or not yet.",
+      heading: "Start with the process that matters most.",
+      body: "Every business has a process that consumes too much time, creates unnecessary costs, or depends heavily on manual work. That’s where we start. We work closely with your team to understand how the process operates, identify what is slowing the business down, and determine where technology can create the greatest business impact. We then design and implement solutions that align with your operational needs, business priorities, and growth objectives. As your technology partner, our commitment goes beyond delivering a system, we focus on creating measurable improvements in efficiency, productivity, cost optimization, and long-term business performance.",
       emailLabel: "Email",
       phoneLabel: "Phone",
-      reassurance: [
-        "Thirty minutes. An engineer turns up, not a salesperson.",
-        "No product pitch. We ask more than we talk.",
-        "If it is not worth building yet, we will say so.",
-      ],
+      reassurance: "Thirty minutes with the engineer who would do the work.",
     },
     footer: {
       rights: "All rights reserved.",
@@ -663,24 +787,52 @@ export const copy: Record<Locale, Dict> = {
 };
 
 /**
- * Named clients, cleared for public use.
+ * Named clients.
  *
- * The logos are the companies' own published marks, not redrawn: Pertamina's
- * from Wikimedia Commons, JAS Airport Services' from ptjas.co.id. CLAUDE.md
- * forbids fabricating a client logo, and a hand-traced approximation of someone
- * else's trademark is a fabrication — so these are the real files or nothing.
+ * The logos we hold are the companies' own published marks, not redrawn:
+ * Pertamina's from Wikimedia Commons, JAS Airport Services' from ptjas.co.id,
+ * Kilang Pertamina Internasional's from kpi.pertamina.com, Pertamina Energy
+ * Terminal's from pertamina-pet.com, and Hyundai's and Epson's from Wikimedia
+ * Commons.
+ * CLAUDE.md forbids fabricating a client logo, and a hand-traced approximation
+ * of someone else's trademark is a fabrication — so these are the real files or
+ * nothing.
  *
  * `wordmark` is what the mark actually spells, which is not always the short
  * name: it becomes the alt text and the visible label under the mark.
+ *
+ * ## Two things outstanding on the four newest entries
+ *
+ * 1. **Artwork.** All six now have a real file, so nothing renders as a
+ *    wordmark. The `logo`-less path in `about.tsx` stays: it is what any future
+ *    client gets before their mark arrives.
+ * 2. **Clearance.** This list used to be described on the page as "two clients
+ *    we are able to name", which implies the rest were not cleared. Naming a
+ *    client publicly, and especially showing their mark, is usually something
+ *    the client has to agree to; Hyundai and Epson in particular have strict
+ *    trademark-use policies. Confirm each is cleared before this goes live.
  */
 export type Client = {
   name: string;
   wordmark: string;
   sector: string;
-  logo: StaticImageData;
-  /** Rendered height in px. Set per mark so the two optically match rather than
-   *  sharing a height, which would leave the taller lockup looking oversized. */
-  height: number;
+  /**
+   * The company's own published mark. Optional.
+   *
+   * A client with no file renders as a typographic wordmark instead. That is
+   * deliberate and it is the only honest option while the artwork is missing:
+   * CLAUDE.md forbids fabricating a client logo, and a hand-traced or
+   * AI-generated approximation of somebody else's registered trademark is a
+   * fabrication with a legal edge on it. Setting the client's name in our own
+   * typeface claims nothing about their brand.
+   *
+   * Drop the real file into `public/logos/`, import it at the top of this file,
+   * and set it here. Nothing in `about.tsx` needs to change.
+   */
+  logo?: StaticImageData;
+  /** Rendered height in px, images only. Set per mark so marks match optically
+   *  rather than sharing a height, which leaves the taller lockup oversized. */
+  height?: number;
 };
 
 export const clients: Client[] = [
@@ -690,6 +842,53 @@ export const clients: Client[] = [
     sector: "Oil and Gas",
     logo: pertaminaLogo,
     height: 26,
+  },
+  {
+    // "Energy Terminal", not "Energi" — that is how the company's own mark
+    // spells it.
+    name: "Pertamina Energy Terminal",
+    wordmark: "Pertamina Energy Terminal",
+    sector: "Oil and Gas",
+    // From the company's own site, pertamina-pet.com. The source file carried
+    // an opaque off-white plate and a faint grey swoosh, which showed as a
+    // visible rectangle against the white plate these marks sit on. Background
+    // dropped to transparent and the canvas cropped to the artwork, so it now
+    // centres on the same optical line as the others.
+    logo: petLogo,
+    height: 40,
+  },
+  {
+    name: "Kilang Pertamina Internasional",
+    wordmark: "Kilang Pertamina Internasional",
+    sector: "Oil and Gas",
+    // The company's own footer mark from kpi.pertamina.com. It is a two-line
+    // lockup — the Pertamina arrow with the subsidiary name set under the
+    // wordmark — so it needs more height than the single-line marks to keep its
+    // second line legible.
+    logo: kpiLogo,
+    height: 42,
+  },
+  {
+    name: "Hyundai",
+    wordmark: "Hyundai",
+    // "Hyundai Motor Company logo.svg" from Wikimedia Commons.
+    logo: hyundaiLogo,
+    height: 18,
+    // Guessed from the sectors this agency actually works in. Hyundai runs
+    // several Indonesian entities and the right one may be automotive
+    // manufacturing, heavy industry, or engineering & construction — confirm
+    // before this ships.
+    sector: "Manufacture",
+  },
+  {
+    name: "Epson",
+    wordmark: "Epson",
+    // "Epson logo.svg" from Wikimedia Commons.
+    logo: epsonLogo,
+    height: 20,
+    // Same caveat as Hyundai: most likely PT Indonesia Epson Industry, but the
+    // legal entity has not been confirmed.
+    sector: "Manufacture",
   },
   {
     name: "JAS",
@@ -708,6 +907,11 @@ export const clients: Client[] = [
  * The narrow terms that actually rank — "digitalisasi HSSE", "command center
  * operasional" — moved into the description rather than being dropped. The
  * title reads broad; the description stays findable.
+ *
+ * The word budget on the page copy means these carry more weight than they did.
+ * Both terms also survive on the page itself: "digitalisasi HSSE" and "command
+ * center" are in `about.body` and the Oil and Gas sector discipline, "integrasi
+ * ERP" in both.
  */
 export const seo: Record<Locale, { title: string; description: string }> = {
   id: {
