@@ -113,7 +113,7 @@ export function Hero({ locale }: { locale: Locale }) {
           </div>
         </nav>
 
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-7 px-4 py-12 text-center md:px-6">
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-3 px-4 py-12 text-center md:px-6">
           <Pill>{t.hero.badge}</Pill>
 
           <h1 className="max-w-[19ch] font-heading text-[clamp(2.25rem,5.6vw,4.5rem)] font-medium leading-[1.03] tracking-[-0.03em] text-balance">
