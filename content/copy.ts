@@ -1,8 +1,11 @@
 import type { StaticImageData } from "next/image";
 
 import fireTruckPoster from "@/public/image/capture-fire-truck.webp";
-import hssePoster from "@/public/image/capture-hsse.webp";
+import hssePoster from "@/public/image/IFRS.png";
+import ihsePoster from "@/public/image/IHSE - AI.png";
+import hrPoster from "@/public/image/IHSE - AI.png";
 import optigainPoster from "@/public/image/capture-optigain.webp";
+import FIFOPoster from "@/public/image/FIFO.png";
 import epsonLogo from "@/public/logos/epson.svg";
 import hyundaiLogo from "@/public/logos/hyundai.svg";
 import jasLogo from "@/public/logos/jas.png";
@@ -146,20 +149,32 @@ export type ProductCapture = {
 
 export const productCaptures: Record<string, ProductCapture> = {
   hsse: {
-    src: "/video/hsse.mp4",
+    src: "/video/IFRS.mp4",
     poster: hssePoster,
     seconds: 58.5,
     kind: "film",
   },
   "hsse-ai": {
     src: "/video/hsse.mp4",
-    poster: hssePoster,
+    poster: ihsePoster,
+    seconds: 58.5,
+    kind: "film",
+  },
+  "hr-agent": {
+    src: "/video/hsse.mp4",
+    poster: hrPoster,
     seconds: 58.5,
     kind: "film",
   },
   optigain: {
     src: "/video/optigain.mp4",
     poster: optigainPoster,
+    seconds: 43.1,
+    kind: "film",
+  },
+  FIFO: {
+    src: "/video/FIFO.mp4",
+    poster: FIFOPoster,
     seconds: 43.1,
     kind: "film",
   },
@@ -621,7 +636,7 @@ export const copy: Record<Locale, Dict> = {
           name: "OPTIGAIN",
           client: "Manufaktur",
           blurb:
-            "Analisis data operasional dengan ringkasan eksekutif dan rekomendasi AI.",
+            "Analisis data sales dengan ringkasan eksekutif dan rekomendasi AI.",
         },
         {
           id: "fire-truck",
@@ -652,7 +667,7 @@ export const copy: Record<Locale, Dict> = {
       body: "Setiap bisnis memiliki proses yang memakan terlalu banyak waktu, menimbulkan biaya yang tidak perlu, atau sangat bergantung pada pekerjaan manual. Dari situlah kami memulai. Kami bekerja sama secara erat dengan tim Anda untuk memahami bagaimana proses tersebut berjalan, mengidentifikasi hal-hal yang menghambat bisnis, serta menentukan di mana teknologi dapat memberikan dampak terbesar. Selanjutnya, kami merancang dan menerapkan solusi yang selaras dengan kebutuhan operasional, prioritas bisnis, dan tujuan pertumbuhan Anda. Sebagai mitra teknologi Anda, komitmen kami lebih dari sekadar menyediakan sebuah sistem—kami berfokus menciptakan peningkatan yang terukur dalam efisiensi, produktivitas, optimalisasi biaya, dan kinerja bisnis jangka panjang.",
       emailLabel: "Email",
       phoneLabel: "Telepon",
-      reassurance: "Tiga puluh menit bersama engineer yang akan mengerjakannya.",
+      reassurance: "Sebagai partner teknologi anda, kami berkomitmen untuk memastikan sistem kami sesuai dengan kebutuhan Anda, kami fokus pada penciptaan peningkatan yang dapat diukur dalam efisiensi, produktivitas, optimasi biaya, dan kinerja bisnis jangka panjang.",
     },
     footer: {
       rights: "Seluruh hak cipta dilindungi.",
@@ -679,7 +694,7 @@ export const copy: Record<Locale, Dict> = {
       // finishes, and it left the two locales claiming different things.
       headline: "Digitalising and automating operations that cannot stop.",
       standfirst:
-        "We build technology for businesses that have to keep moving, whatever the industry. Oil and gas, aviation, manufacturing. The complexity differs every time. The complaint rarely does: processes still done by hand, data sitting in systems that do not talk, and your best people spending their day working around it. Every decision depends on the right information arriving at the right moment. We design systems that connect your operations and tidy the workflow around how the business actually runs.",
+        "We build technology for businesses that need to keep moving, regardless of industry. From oil & gas and aviation to manufacturing and beyond, we’ve seen that every business has its own complexity, but many share the same challenges: manual processes, disconnected data, fragmented systems, and valuable people spending too much time working around inefficiencies. Where every decision depends on having the right information at the right moment. We help businesses turn those challenges into opportunities by designing digital solutions that connect operations, streamline workflows, and make information work harder. Whether you’re running a factory, managing a logistics network, serving customers, or scaling a growing enterprise, we build technology around how your business actually works. We turn those hidden complexities into digital systems that connect the entire operation, so technology doesn’t simply sit on top of the business, but becomes part of how the business moves, adapts, and performs.",
       mediaDescription: "A compute unit built to the client's specification.",
       panelTitle: "Integrated HSSE System",
       panelBody:
@@ -695,8 +710,8 @@ export const copy: Record<Locale, Dict> = {
     },
     process: {
       badge: "How we work",
-      heading: "You can stop at the end of any stage.",
-      body: "If you stop, everything already built stays yours. The code, the documentation, the process map.",
+      heading: "How we work on thos 4 phases",
+      body: "",
       phaseLabel: "Stage",
       of: "of",
       deliverablesLabel: "What you get",
@@ -707,7 +722,7 @@ export const copy: Record<Locale, Dict> = {
     about: {
       badge: "About us",
       heading: "We are not finished until the system is actually used.",
-      body: "Since 2018: HSSE digitalisation, ERP integration, and command centres that people on site use every day.",
+      body: "Since 2018: HSSE digitalisation, ERP integration, command centres, and Agentic AI that already solved our clients problems.",
       missionLabel: "Mission",
       mission:
         "To deliver adaptive, integrated technology solutions with real operational impact for our clients, through continuous innovation.",
@@ -728,28 +743,28 @@ export const copy: Record<Locale, Dict> = {
     },
     products: {
       badge: "Projects we have delivered",
-      heading: "Systems that are still in use today.",
+      heading: "Solutions that solved problems for our clients",
       items: [
-        {
-          id: "hsse",
-          name: "Integrated Fire Readiness System",
-          client: "Pertamina",
-          blurb:
-            "Digital inspection of fire readiness equipment. Desktop and field tablets.",
-        },
         {
           id: "hsse-ai",
           name: "Integrated HSSE",
           client: "Pertamina",
           blurb:
-            "AI-generated checklists, pipeline visualisation, and an operational command centre.",
+            "AI-generated checklists, pipeline visualisation, and an operational command centre. the AI also will suggest the incident prevention and equipment maintenance schedule based on the data from the field and the past incident report",
+        },
+        {
+          id: "hr-agent",
+          name: "HR Recruitment Agent",
+          client: "JAS Airport Services",
+          blurb:
+            "Agentic AI that help internal hiring team to find the best candidate for the job, faster and more accurate. it's integrated with the company's ERP and HRIS system, and can be accessed through a web interface or a mobile app.",
         },
         {
           id: "optigain",
           name: "OPTIGAIN",
           client: "Manufacture",
           blurb:
-            "Operational data analysis with an executive summary and AI recommendations.",
+            "Sales and selling volumes data analysis with an executive summary and AI product recommendations and optimization.",
         },
         {
           id: "fire-truck",
@@ -757,6 +772,20 @@ export const copy: Record<Locale, Dict> = {
           client: "Pertamina",
           blurb:
             "Emergency fire response training, without taking real appliances off the line.",
+        },
+        {
+          id: "FIFO",
+          name: "FIFO - Vendor Selection Automation",
+          client: "JAS Airport Services",
+          blurb:
+            "Implementing AI solutions for vendor selection and procurement processes, enabling faster and more accurate decision-making.",
+        },
+        {
+          id: "hsse",
+          name: "Integrated Fire Readiness System",
+          client: "Pertamina",
+          blurb:
+            "Digital inspection of fire readiness equipment. Desktop and field tablets. and do the daily report also incident report",
         },
       ],
       captureKinds: { film: "Product film", capture: "Screen recording" },
@@ -775,7 +804,7 @@ export const copy: Record<Locale, Dict> = {
       body: "Every business has a process that consumes too much time, creates unnecessary costs, or depends heavily on manual work. That’s where we start. We work closely with your team to understand how the process operates, identify what is slowing the business down, and determine where technology can create the greatest business impact. We then design and implement solutions that align with your operational needs, business priorities, and growth objectives. As your technology partner, our commitment goes beyond delivering a system, we focus on creating measurable improvements in efficiency, productivity, cost optimization, and long-term business performance.",
       emailLabel: "Email",
       phoneLabel: "Phone",
-      reassurance: "Thirty minutes with the engineer who would do the work.",
+      reassurance: "As your technology partner, our commitment goes beyond delivering a system, we focus on creating measurable improvements in efficiency, productivity, cost optimization, and long-term business performance.",
     },
     footer: {
       rights: "All rights reserved.",

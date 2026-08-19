@@ -26,7 +26,7 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
         <About locale={locale} />
         {/* Directly under the mission and vision pair, which is where the
             client asked for it. */}
-        <Team locale={locale} />
+        {/* <Team locale={locale} /> */}
         <Expertise locale={locale} />
         <Products locale={locale} />
         {/* Last before the CTA on purpose: the process section ends on "you can

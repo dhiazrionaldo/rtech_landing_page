@@ -22,8 +22,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: locale === defaultLocale ? 1 : 0.8,
     alternates: {
       languages: {
-        "id-ID": absoluteUrl("/id"),
         en: absoluteUrl("/en"),
+        "id-ID": absoluteUrl("/id"),
       },
     },
   }));

@@ -7,13 +7,13 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
-      // Every route lives under /[locale]; send the bare root to Indonesian,
+      // Every route lives under /[locale]; send the bare root to English,
       // which is the default locale and the x-default hreflang target.
       //
       // Permanent (308), not temporary (307): the destination never varies by
       // user or session, and a 307 tells Google to keep the root as the
-      // indexable URL rather than consolidating link signals onto /id.
-      { source: "/", destination: "/id", permanent: true },
+      // indexable URL rather than consolidating link signals onto /en.
+      { source: "/", destination: "/en", permanent: true },
     ];
   },
 };

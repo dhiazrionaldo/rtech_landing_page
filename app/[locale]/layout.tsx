@@ -58,11 +58,11 @@ export async function generateMetadata({
     alternates: {
       canonical: `/${locale}`,
       // CLAUDE.md requires hreflang on a bilingual site. x-default points at
-      // Indonesian: the audience, the clients, and the deck are all Indonesian.
+      // English, which is the default locale the bare root redirects to.
       languages: {
-        "id-ID": "/id",
         en: "/en",
-        "x-default": "/id",
+        "id-ID": "/id",
+        "x-default": "/en",
       },
     },
     openGraph: {

@@ -67,15 +67,17 @@ export function Contact({ locale }: { locale: Locale }) {
                   picture of a sales call, so the picture is worth correcting
                   before the form. It is a caption to the button, so it sits
                   with it. */}
-              <p className="max-w-[34ch] text-[0.8125rem] leading-relaxed text-muted-foreground">
+              {/* <p className="max-w-[54ch] text-[0.8125rem] leading-relaxed text-muted-foreground">
                 {t.contact.reassurance}
-              </p>
+              </p> */}
             </div>
           </div>
-
-          <p className="max-w-[60ch] text-base leading-[1.7] text-muted-foreground">
+              <p className="max-w-[90ch] text-base leading-[1.7] text-muted-foreground">
+                {t.contact.reassurance}
+              </p>
+          {/* <p className="max-w-[90ch] text-base leading-[1.7] text-muted-foreground">
             {t.contact.body}
-          </p>
+          </p> */}
         </div>
 
         {/* Along the foot, full width. Three cells share one hairline grid — the

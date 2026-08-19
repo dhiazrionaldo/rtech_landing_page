@@ -1,9 +1,9 @@
-export const locales = ["id", "en"] as const;
+export const locales = ["en", "id"] as const;
 
 export type Locale = (typeof locales)[number];
 
-/** Bahasa Indonesia is the default: the deck, the clients, and the buyers are Indonesian. */
-export const defaultLocale: Locale = "id";
+/** English is the default: the bare root resolves here and it is the x-default hreflang target. */
+export const defaultLocale: Locale = "en";
 
 export function isLocale(value: string): value is Locale {
   return (locales as readonly string[]).includes(value);
