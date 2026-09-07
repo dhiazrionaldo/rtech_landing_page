@@ -1328,7 +1328,6 @@ export function WorkRail({ locale }: { locale: Locale }) {
             alt={`${product.name}, ${product.blurb}`}
             meta={meta}
             title={product.name}
-            className={index === 0 ? "[&]:first-of-type" : undefined}
             {...(index === 0 ? { "data-rail-first-card": "" } : {})}
           >
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -1788,6 +1787,8 @@ to:
 
 If `Reveal` does not currently forward an `id` prop, add it to its props type and spread it onto the rendered element. Do not change any other part of `Reveal`.
 
+**This is the task's main risk.** `RailControls` and `PreviewVideo` both find the track with `document.getElementById(trackId)`. If the `id` is dropped in the wrap, the arrows and the hover previews stop working with no error in the console and no failing test. If forwarding `id` through `Reveal` turns out to be invasive, do not force it — instead leave the `<ul>` exactly as it is and put the reveal group attribute on it directly, which is the same mechanism `Reveal` uses internally.
+
 - [ ] **Step 3: Verify the no-JS and reduced-motion contracts**
 
 The `.js`-scoped start states in `globals.css` must still leave content visible without JavaScript:
@@ -1799,6 +1800,14 @@ curl -s http://localhost:3001/en | grep -c 'opacity:0'
 Expected: `0`. Any non-zero result means a start state leaked into the server HTML and a crawler would see hidden content.
 
 Then set the OS or browser to `prefers-reduced-motion: reduce`, reload, and confirm every card is visible with no animation and that GSAP is never fetched (check the Network panel for a gsap chunk).
+
+**Then confirm the track id survived the wrap**, which nothing else in this task would catch:
+
+```bash
+curl -s http://localhost:3001/en | grep -c 'id="produk-track"'   # must be 1
+```
+
+and by hand, click the prev/next arrows on all three rails and confirm each one still scrolls its track.
 
 - [ ] **Step 4: Add the MOTION.md row**
 
@@ -3254,12 +3263,14 @@ Four seconds each, silent, 640px wide, looping. One per product slug.
 
 ```bash
 mkdir -p public/video/preview
+# MP4 only. `PreviewVideo` assigns a single `video.src`, and swapping <source>
+# children at runtime needs a load() dance for no real gain: H.264 at 640px is
+# universally supported and each file is already inside the budget. The showreel
+# keeps both formats because it uses real <source> elements.
 preview() {  # $1 = source, $2 = start seconds, $3 = slug
   ffmpeg -y -ss "$2" -t 4 -i "$1" -an -vf "scale=640:-2,fps=24" \
     -c:v libx264 -crf 32 -preset slow -pix_fmt yuv420p -movflags +faststart \
     "public/video/preview/$3.mp4"
-  ffmpeg -y -ss "$2" -t 4 -i "$1" -an -vf "scale=640:-2,fps=24" \
-    -c:v libvpx-vp9 -b:v 300k -crf 36 -row-mt 1 "public/video/preview/$3.webm"
 }
 preview public/video/hsse.mp4       6 integrated-hsse
 preview public/video/hsse.mp4      20 hr-recruitment-agent
@@ -3362,7 +3373,9 @@ Suggested questions (write the answers from existing copy, invent nothing):
 5. How does an engagement start? / Bagaimana proyek dimulai?
 6. Where are you based? / Berlokasi di mana?
 
-Render them as a real `<section>` on the page above Contact, with `<h2>` and a `<dl>`, and emit the matching `FAQPage` JSON-LD. The visible copy and the schema must say the same thing — mismatched FAQ schema is a manual-action risk.
+Create `components/sections/faq.tsx` — a server component rendering a `<section aria-labelledby="faq-heading">` with an `<h2>` and a `<dl>` — and render it in `app/[locale]/page.tsx` directly above `<Contact />`. Emit the matching `FAQPage` JSON-LD from `structured-data.tsx`.
+
+The visible copy and the schema must say the same thing, string for string. Mismatched FAQ schema is a manual-action risk, so build both from the same `t.faq` array rather than writing the answers twice.
 
 - [ ] **Step 4: Verify**
 
