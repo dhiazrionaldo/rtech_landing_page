@@ -74,9 +74,22 @@ export type Sector = {
 
 export type Product = {
   id: string;
+  /** URL segment for /work/[slug]. Stable; changing one breaks a live URL. */
+  slug: string;
   name: string;
   client?: string;
+  /** Sector as it appears on the card's metadata strip. */
+  sector: string;
+  status: "in-production" | "delivered";
+  year: number;
+  stack: string[];
   blurb: string;
+  /**
+   * Quantified outcomes. `pending()` until the client supplies real figures.
+   * CLAUDE.md: never invent or inflate a number — an unfilled metric is a
+   * type-level fact here and can never render as a visible placeholder.
+   */
+  metrics?: { label: string; value: Fillable }[];
 };
 
 /**
@@ -538,32 +551,76 @@ export const copy: Record<Locale, Dict> = {
       heading: "Solusi yang telah kami kembangkan untuk klien kami.",
       items: [
         {
-          id: "hsse",
-          name: "Integrated Fire Readiness System",
-          client: "Pertamina",
-          blurb:
-            "Inspeksi digital kesiapan peralatan pemadam kebakaran. Desktop dan tablet lapangan.",
-        },
-        {
           id: "hsse-ai",
+          slug: "integrated-hsse",
           name: "Integrated HSSE",
           client: "Pertamina",
+          sector: "Minyak dan Gas",
+          status: "in-production",
+          year: 2024,
+          stack: ["Next.js", "Python", "Computer vision", "On-premise"],
           blurb:
             "Checklist dibuat AI, visualisasi jalur pipa, dan command center operasional.",
         },
         {
+          id: "hr-agent",
+          slug: "hr-recruitment-agent",
+          name: "HR Recruitment Agent",
+          client: "JAS Airport Services",
+          sector: "Aviasi",
+          status: "in-production",
+          year: 2025,
+          stack: ["Agentic AI", "ERP", "HRIS"],
+          blurb:
+            "Agen AI yang membantu tim rekrutmen internal menemukan kandidat terbaik, lebih cepat dan akurat. Terintegrasi dengan sistem ERP dan HRIS perusahaan, dan bisa diakses lewat web maupun aplikasi mobile.",
+        },
+        {
           id: "optigain",
+          slug: "optigain",
           name: "OPTIGAIN",
           client: "Manufaktur",
+          sector: "Manufaktur",
+          status: "delivered",
+          year: 2024,
+          stack: ["Forecasting", "Dashboard", "Python"],
           blurb:
             "Analisis data sales dengan ringkasan eksekutif dan rekomendasi AI.",
         },
         {
           id: "fire-truck",
+          slug: "fire-truck-simulator",
           name: "Fire Truck Simulator",
           client: "Pertamina",
+          sector: "Minyak dan Gas",
+          status: "delivered",
+          year: 2023,
+          stack: ["Simulation", "3D", "Training"],
           blurb:
             "Simulasi tanggap darurat kebakaran, tanpa menurunkan armada sungguhan.",
+        },
+        {
+          id: "FIFO",
+          slug: "fifo-vendor-selection",
+          name: "FIFO - Vendor Selection Automation",
+          client: "JAS Airport Services",
+          sector: "Aviasi",
+          status: "in-production",
+          year: 2025,
+          stack: ["Agentic AI", "Procurement", "ERP"],
+          blurb:
+            "Solusi AI untuk seleksi vendor dan proses pengadaan, mempercepat dan mempertajam pengambilan keputusan.",
+        },
+        {
+          id: "hsse",
+          slug: "fire-readiness-system",
+          name: "Integrated Fire Readiness System",
+          client: "Pertamina",
+          sector: "Minyak dan Gas",
+          status: "in-production",
+          year: 2023,
+          stack: ["Next.js", "Tablet", "Offline-first"],
+          blurb:
+            "Inspeksi digital kesiapan peralatan pemadam kebakaran. Desktop dan tablet lapangan.",
         },
       ],
       captureKinds: { film: "Video produk", capture: "Rekaman layar" },
@@ -667,43 +724,73 @@ export const copy: Record<Locale, Dict> = {
       items: [
         {
           id: "hsse-ai",
+          slug: "integrated-hsse",
           name: "Integrated HSSE",
           client: "Pertamina",
+          sector: "Oil and Gas",
+          status: "in-production",
+          year: 2024,
+          stack: ["Next.js", "Python", "Computer vision", "On-premise"],
           blurb:
             "AI-generated checklists, pipeline visualisation, and an operational command centre. the AI also will suggest the incident prevention and equipment maintenance schedule based on the data from the field and the past incident report",
         },
         {
           id: "hr-agent",
+          slug: "hr-recruitment-agent",
           name: "HR Recruitment Agent",
           client: "JAS Airport Services",
+          sector: "Aviation",
+          status: "in-production",
+          year: 2025,
+          stack: ["Agentic AI", "ERP", "HRIS"],
           blurb:
             "Agentic AI that help internal hiring team to find the best candidate for the job, faster and more accurate. it's integrated with the company's ERP and HRIS system, and can be accessed through a web interface or a mobile app.",
         },
         {
           id: "optigain",
+          slug: "optigain",
           name: "OPTIGAIN",
           client: "Manufacture",
+          sector: "Manufacture",
+          status: "delivered",
+          year: 2024,
+          stack: ["Forecasting", "Dashboard", "Python"],
           blurb:
             "Sales and selling volumes data analysis with an executive summary and AI product recommendations and optimization.",
         },
         {
           id: "fire-truck",
+          slug: "fire-truck-simulator",
           name: "Fire Truck Simulator",
           client: "Pertamina",
+          sector: "Oil and Gas",
+          status: "delivered",
+          year: 2023,
+          stack: ["Simulation", "3D", "Training"],
           blurb:
             "Emergency fire response training, without taking real appliances off the line.",
         },
         {
           id: "FIFO",
+          slug: "fifo-vendor-selection",
           name: "FIFO - Vendor Selection Automation",
           client: "JAS Airport Services",
+          sector: "Aviation",
+          status: "in-production",
+          year: 2025,
+          stack: ["Agentic AI", "Procurement", "ERP"],
           blurb:
             "Implementing AI solutions for vendor selection and procurement processes, enabling faster and more accurate decision-making.",
         },
         {
           id: "hsse",
+          slug: "fire-readiness-system",
           name: "Integrated Fire Readiness System",
           client: "Pertamina",
+          sector: "Oil and Gas",
+          status: "in-production",
+          year: 2023,
+          stack: ["Next.js", "Tablet", "Offline-first"],
           blurb:
             "Digital inspection of fire readiness equipment. Desktop and field tablets. and do the daily report also incident report",
         },
