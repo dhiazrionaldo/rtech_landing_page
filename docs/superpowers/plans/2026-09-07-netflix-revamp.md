@@ -1766,6 +1766,18 @@ curl -s http://localhost:3001/en/work/does-not-exist -o /dev/null -w "%{http_cod
 
 Expected: `1` or more, then `404`.
 
+**Every nav href must resolve to a real id on the page.** Task 5 wrote the nav
+against the final information architecture before all its targets existed, so this
+is the gate that closes that loop:
+
+```bash
+for a in keahlian produk industri cara-kerja kontak; do
+  printf '%s: ' "$a"; curl -s http://localhost:3001/en | grep -c "id=\"$a\""
+done
+```
+
+Every line must end in `1` or more. A `0` is a broken in-page link.
+
 Run: `npm run typecheck && npm run lint && npm test`
 
 - [ ] **Step 5: Commit**
