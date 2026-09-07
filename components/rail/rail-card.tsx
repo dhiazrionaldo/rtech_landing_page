@@ -2,11 +2,33 @@ import Image, { type StaticImageData } from "next/image";
 
 import { cn } from "@/lib/utils";
 
-/** Every rail card is this width, so three rails read as one system. */
+/**
+ * Every rail card is this width, so three rails read as one system.
+ *
+ * Must stay a plain string literal, exactly as written below. Tailwind v4
+ * finds classes by scanning source files for literal strings — it does not
+ * evaluate JavaScript. Derive this from a shared breakpoint object, build it
+ * with a template, or compute it any other indirect way, and Tailwind can no
+ * longer see the classes: it silently omits them from the generated CSS. The
+ * result is every rail card rendering at zero width. No error, no build
+ * warning, no failing test — the page just looks broken.
+ *
+ * RAIL_CARD_SIZES below repeats these same breakpoints for next/image. The
+ * two are not derived from each other for the same reason; keep them in sync
+ * by hand whenever either changes.
+ */
 export const RAIL_CARD_WIDTH =
   "w-[78vw] sm:w-[46vw] lg:w-[31vw] xl:w-[22rem]";
 
-/** Matches RAIL_CARD_WIDTH. Passed to next/image so it never over-fetches. */
+/**
+ * Mirrors the breakpoints in RAIL_CARD_WIDTH so next/image requests the
+ * right source size at each width instead of over-fetching. Same literal-
+ * string constraint as RAIL_CARD_WIDTH above, for the same reason — Tailwind
+ * only sees classes it can find as text, and this is passed straight into
+ * next/image's `sizes` prop rather than a class, but keeping it a plain
+ * string here matches RAIL_CARD_WIDTH's pattern and keeps both easy to diff
+ * against each other when one changes.
+ */
 export const RAIL_CARD_SIZES =
   "(max-width: 640px) 78vw, (max-width: 1024px) 46vw, (max-width: 1280px) 31vw, 22rem";
 
