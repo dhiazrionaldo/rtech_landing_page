@@ -195,6 +195,28 @@
   background-image: var(--glow-media);
 }
 
+/* The rail track scrolls full-bleed but its first card must line up with the
+   page's 1400px content column, and the last card must bleed past the right
+   edge. One padding value does both: cards start on the grid, and the track
+   keeps scrolling past where the column stops.
+
+   The bleeding partial card at the right edge is the affordance that says
+   "there is more" without a scrollbar. It is load-bearing, not decoration. */
+@utility rail-track {
+  padding-inline: max(0.75rem, calc((100vw - 1400px) / 2));
+  scroll-padding-inline: max(0.75rem, calc((100vw - 1400px) / 2));
+  scrollbar-width: none;
+
+  @media (width >= 768px) {
+    padding-inline: max(1.5rem, calc((100vw - 1400px) / 2));
+    scroll-padding-inline: max(1.5rem, calc((100vw - 1400px) / 2));
+  }
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Start states for scroll-revealed content.
  *
  * Scoped to `.js`, which the inline script in <head> adds before first paint.
