@@ -122,12 +122,19 @@ export type Phase = {
 type Dict = {
   nav: { label: string; href: string }[];
   hero: {
-    badge: string;
+    eyebrow: string;
     headline: string;
-    standfirst: string;
+    subline: string;
     mediaDescription: string;
-    panelTitle: string;
-    panelBody: string;
+  };
+  rails: {
+    capabilities: string;
+    work: string;
+    industries: string;
+    prev: string;
+    next: string;
+    inProduction: string;
+    delivered: string;
   };
   cta: {
     primary: string;
@@ -464,39 +471,32 @@ const teamEn: TeamMember[] = [
 export const copy: Record<Locale, Dict> = {
   id: {
     nav: [
-      { label: "Tentang kami", href: "#tentang" },
-      { label: "Keahlian", href: "#keahlian" },
-      { label: "Produk", href: "#produk" },
+      { label: "Layanan", href: "#keahlian" },
+      { label: "Portofolio", href: "#produk" },
+      { label: "Industri", href: "#industri" },
       { label: "Cara kerja", href: "#cara-kerja" },
-      { label: "Tim", href: "#tim" },
-      { label: "Hubungi kami", href: "#kontak" },
+      { label: "Kontak", href: "#kontak" },
     ],
     hero: {
-      badge: "Software agency Indonesia, sejak 2018",
-      // Still carries "digitalisasi" and "operasi", the two terms this page
-      // ranks on. It states a constraint the reader lives with instead of
-      // describing a service category.
-      headline: "Spesialis Digitalisasi dan otomasi untuk operasional.",
-      // NOT verbatim from the deck. The deck line scoped the agency to Oil &
-      // Gas; that was costing cross-sector enquiries, so it was reworded with
-      // the client's explicit approval on 2026-08-10. Oil & Gas is still where
-      // the work started, not the limit of it, and the three sectors named are
-      // the three actually delivered. No others implied.
-      //
-      // Cut from 37 words to 20. The three-pain list is now two: "data yang
-      // tercecer di banyak tempat" was the weakest and the most abstract of the
-      // three, and dropping it also breaks the triad.
-      standfirst:
-        "Kami membangun teknologi untuk bisnis yang harus terus bergerak, apa pun industrinya. Minyak & gas, penerbangan, manufaktur. Kompleksitasnya beda-beda. Tapi keluhannya sering sama: proses masih manual, data terpisah di banyak sistem, dan orang-orang terbaik Anda menghabiskan hari untuk menyiasati inefisiensi. Padahal setiap keputusan bergantung pada informasi yang tepat, di waktu yang tepat. Kami merancang sistem yang menghubungkan operasional Anda dan merapikan alur kerjanya. Rancangannya mengikuti cara bisnis Anda benar-benar berjalan.",
+      eyebrow: "Sistem AI untuk industri Indonesia · Sejak 2018",
+      headline: "Operasi yang tidak boleh berhenti.",
+      subline:
+        "AI agent, aplikasi custom, dan integrasi ERP untuk industri Indonesia. Termasuk perangkat kerasnya.",
       mediaDescription:
-        "Unit komputasi yang kami sesuaikan dengan kebutuhan klien.",
-      panelTitle: "Integrated HSSE System",
-      panelBody:
-        "Inspeksi digital HSSE, visualisasi jalur pipa, command center. Jalan di server Anda.",
+        "Rekaman layar sistem yang dibangun RTECH INDO dan sudah berjalan: inspeksi kesiapan pemadam kebakaran, command centre HSSE, otomasi pemilihan vendor, dan simulator tanggap darurat kebakaran.",
+    },
+    rails: {
+      capabilities: "Yang kami bangun",
+      work: "Sistem yang sudah berjalan",
+      industries: "Industri yang kami kenal",
+      prev: "Geser ke kiri",
+      next: "Geser ke kanan",
+      inProduction: "Sudah berjalan",
+      delivered: "Selesai",
     },
     cta: {
       primary: "Jadwalkan sesi scoping",
-      secondary: "Lihat yang sudah kami kerjakan",
+      secondary: "Lihat yang sudah kami bangun",
       href: pending("URL penjadwalan: Cal.com, Calendly, atau rute formulir"),
     },
     clients: {
@@ -656,30 +656,32 @@ export const copy: Record<Locale, Dict> = {
 
   en: {
     nav: [
-      { label: "About", href: "#tentang" },
-      { label: "Expertise", href: "#keahlian" },
-      { label: "Products", href: "#produk" },
+      { label: "What we build", href: "#keahlian" },
+      { label: "Work", href: "#produk" },
+      { label: "Industries", href: "#industri" },
       { label: "How we work", href: "#cara-kerja" },
-      { label: "Team", href: "#tim" },
       { label: "Contact", href: "#kontak" },
     ],
     hero: {
-      badge: "An Indonesian software agency, since 2018",
-      // "Digitalising and Automating operations, business." was the client's
-      // line. The intent — say automation, not just digitalisation — is kept.
-      // The trailing ", business" is not: it reads as a list that never
-      // finishes, and it left the two locales claiming different things.
-      headline: "Digitalising and automating operations that cannot stop.",
-      standfirst:
-        "We build technology for businesses that need to keep moving, regardless of industry. From oil & gas and aviation to manufacturing and beyond, we’ve seen that every business has its own complexity, but many share the same challenges: manual processes, disconnected data, fragmented systems, and valuable people spending too much time working around inefficiencies. Where every decision depends on having the right information at the right moment. We help businesses turn those challenges into opportunities by designing digital solutions that connect operations, streamline workflows, and make information work harder. Whether you’re running a factory, managing a logistics network, serving customers, or scaling a growing enterprise, we build technology around how your business actually works. We turn those hidden complexities into digital systems that connect the entire operation, so technology doesn’t simply sit on top of the business, but becomes part of how the business moves, adapts, and performs.",
-      mediaDescription: "A compute unit built to the client's specification.",
-      panelTitle: "Integrated HSSE System",
-      panelBody:
-        "Digital HSSE inspection, pipeline visualisation, command centre. Running on your own servers.",
+      eyebrow: "AI systems for Indonesian industry · Since 2018",
+      headline: "Operations that do not stop.",
+      subline:
+        "AI agents, custom software and ERP integration for Indonesian industry. Plus the hardware it runs on.",
+      mediaDescription:
+        "Screen recordings of systems RTECH INDO built, running in production: digital fire-readiness inspection, an HSSE command centre, vendor selection automation, and a fire response simulator.",
+    },
+    rails: {
+      capabilities: "What we build",
+      work: "Systems running in production",
+      industries: "Industries we know",
+      prev: "Scroll left",
+      next: "Scroll right",
+      inProduction: "In production",
+      delivered: "Delivered",
     },
     cta: {
       primary: "Book a scoping call",
-      secondary: "See what we have built",
+      secondary: "See what we've built",
       href: pending("Booking URL: Cal.com, Calendly, or a form route"),
     },
     clients: {
