@@ -232,6 +232,10 @@ type Dict = {
     reassurance: string;
   };
   footer: {
+    /** One line under the wordmark. Not the billboard eyebrow: this is a
+     *  descriptor for someone who has read the whole page, not a scannable
+     *  tag above a headline. */
+    tagline: string;
     rights: string;
     navLabel: string;
     contactLabel: string;
@@ -647,6 +651,8 @@ export const copy: Record<Locale, Dict> = {
       reassurance: "Sebagai partner teknologi anda, kami berkomitmen untuk memastikan sistem kami sesuai dengan kebutuhan Anda, kami fokus pada penciptaan peningkatan yang dapat diukur dalam efisiensi, produktivitas, optimasi biaya, dan kinerja bisnis jangka panjang.",
     },
     footer: {
+      tagline:
+        "Agensi software Indonesia yang membangun sistem AI untuk operasi industri.",
       rights: "Seluruh hak cipta dilindungi.",
       navLabel: "Halaman",
       contactLabel: "Kontak",
@@ -816,6 +822,8 @@ export const copy: Record<Locale, Dict> = {
       reassurance: "As your technology partner, our commitment goes beyond delivering a system, we focus on creating measurable improvements in efficiency, productivity, cost optimization, and long-term business performance.",
     },
     footer: {
+      tagline:
+        "An Indonesian software agency building AI systems for industrial operations.",
       rights: "All rights reserved.",
       navLabel: "Pages",
       contactLabel: "Contact",
