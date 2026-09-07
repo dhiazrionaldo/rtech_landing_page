@@ -31,18 +31,25 @@ export function Billboard({ locale }: { locale: Locale }) {
         aria-hidden="true"
         className="absolute inset-0 -z-10"
       >
+        {/* The art is atmosphere, the type is the message. A filter is not a
+            colour, so dimming and desaturating here does not touch the
+            no-hardcoded-colour rule — it holds for any poster this frame ever
+            carries, not just this one. */}
         <Image
           src={billboardPoster}
           alt=""
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover brightness-[0.55] saturate-[0.4]"
         />
-        {/* Scrim. Left-heavy for the title block, bottom-heavy for the logo
-            row. Built from --background so it survives a theme change. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent" />
+        {/* Scrim. A hard stop over the title column rather than a slow fade:
+            solid --background through 42% of the frame width, gone by 78%, so
+            the right side of the poster still reads as a lit image. Bottom
+            gradient catches the logo row. Both built from --background so
+            they survive a theme switch. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background from-42% via-background/85 via-62% to-transparent to-78%" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/85 to-transparent" />
       </div>
 
       <div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-28 md:px-6 md:pb-14">
