@@ -1,6 +1,5 @@
 import { Logo } from "@/components/brand/logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
-import { BrainField } from "@/components/motion/brain-field";
 import { CountUp } from "@/components/motion/count-up";
 import { ActionButton } from "@/components/ui/action-button";
 import { Pill } from "@/components/ui/pill";
@@ -11,27 +10,23 @@ import type { Locale } from "@/content/i18n";
 /**
  * The hero, rebuilt against the Sony reference the client supplied.
  *
- * The reference's mechanic is a single object that stays on screen and
- * transforms as you scroll, with copy composed around it — not a background
- * loop playing under a page. Here that object is the node field, and the hero
- * is its first scene: field full-bleed, headline centred over it, everything
- * else arranged symmetrically around the centre line.
- *
  * ## What this replaced
  *
- * The `ApertureVideo` compute unit is gone from the hero. It was the page's one
- * heavy element and the node field is now that, and CLAUDE.md allows the hero
- * exactly one. Cutting it also removes the fabricated "AURA-7 / AI PROCESSOR /
- * 3.2T FLOPS" spec sheet, which asserted an invented benchmark on a page whose
- * argument is that we do not inflate numbers. The component still exists and is
- * still wired for the product captures if it is ever wanted back.
+ * The `ApertureVideo` compute unit is gone from the hero. Cutting it also
+ * removes the fabricated "AURA-7 / AI PROCESSOR / 3.2T FLOPS" spec sheet, which
+ * asserted an invented benchmark on a page whose argument is that we do not
+ * inflate numbers. The component still exists and is still wired for the
+ * product captures if it is ever wanted back.
+ *
+ * The node field and the brain field are gone too, deleted on 2026-09-07 —
+ * CLAUDE.md bans particle fields standing in for a neural network and
+ * wireframe brains by name. Nothing replaces them; see `MOTION.md`.
  *
  * ## Layering
  *
- * glow → canvas → scrim → content, all inside the card's `isolate`. The scrim
- * is what makes centred type legible over a field of ninety moving nodes; it is
- * built from `--background` rather than a hardcoded black so it survives a
- * theme change.
+ * glow → scrim → content, all inside the card's `isolate`. The scrim is what
+ * makes centred type legible over the card art; it is built from
+ * `--background` rather than a hardcoded black so it survives a theme change.
  *
  * The standfirst stays in two columns above `lg`. Centred composition does not
  * change the fact that it is a seventy-word paragraph, and seventy words set
@@ -42,30 +37,9 @@ export function Hero({ locale }: { locale: Locale }) {
   const href = isPending(t.cta.href) ? undefined : t.cta.href;
 
   return (
-    <header
-      data-field-scene=""
-      data-field-x={0}
-      data-field-zoom={1}
-      className="px-3 pt-3 md:px-6 md:pt-6"
-    >
+    <header className="px-3 pt-3 md:px-6 md:pt-6">
       <div className="relative isolate flex min-h-[min(92svh,940px)] flex-col overflow-hidden rounded-[1.5rem] border border-border md:rounded-[2rem]">
         <div aria-hidden="true" className="media-glow absolute inset-0" />
-
-        {/* The brain. Hung off the right edge and deliberately oversized, so it
-            bleeds past the card rather than sitting inside it as a picture —
-            the reference's object is always larger than its frame. Hidden below
-            lg: on a narrow screen it lands under the copy, and the full-page
-            node field is already doing this job there.
-
-            `-translate-y-1/2 top-1/2` rather than `inset-y-0` because the shape
-            has to stay centred on the headline's optical line as the card grows
-            with the paragraph. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute right-[-12%] top-1/2 hidden h-[135%] w-[62%] -translate-y-1/2 lg:block"
-        >
-          <BrainField />
-        </div>
 
         {/* Scrim. Densest at the centre, where the headline sits, and at the
             foot, where the stat rail does. */}
@@ -166,8 +140,8 @@ export function Hero({ locale }: { locale: Locale }) {
           </aside>
         </div>
 
-        {/* The field is decorative and aria-hidden, so what it stands for has to
-            exist as crawlable text. */}
+        {/* The card art this describes is decorative and aria-hidden, so what
+            it stands for has to exist as crawlable text. */}
         <p className="sr-only">{t.hero.mediaDescription}</p>
       </div>
     </header>

@@ -37,7 +37,7 @@ export function Expertise({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="keahlian" headingId="expertise-heading" fieldX={0.28} fieldZoom={1.6}>
+    <Section id="keahlian" headingId="expertise-heading">
       {/* No body. The paragraph here said the constraints differ by sector and
           that everything listed was built rather than proposed — both of which
           the three columns underneath demonstrate on their own. It was also the

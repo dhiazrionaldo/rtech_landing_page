@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 
 import "../globals.css";
 import { cn } from "@/lib/utils";
-import { NodeField } from "@/components/motion/node-field";
 import { SmoothScroll } from "@/components/motion/smooth-scroll";
 import { StructuredData } from "@/components/seo/structured-data";
 import { htmlLang, isLocale, locales, type Locale } from "@/content/i18n";
@@ -121,13 +120,9 @@ export const viewport: Viewport = {
  * permanently invisible sections.
  */
 /**
- * The theme branch is gone: the page is dark in every case now.
- *
- * The node field is a full-bleed fixed layer behind the whole document, and a
- * background cannot be full-bleed on a page that alternates light and dark
- * surfaces — it either disappears behind the light ones or makes them
- * illegible. The supplied reference is near-black throughout for the same
- * reason. `ThemeToggle` is no longer rendered; the component is untouched, so
+ * The theme branch is gone: the page is dark in every case now. The supplied
+ * reference is near-black throughout, and that stays true with the node field
+ * removed. `ThemeToggle` is no longer rendered; the component is untouched, so
  * restoring light mode means putting the localStorage branch back here and the
  * toggle back in the hero nav.
  *
@@ -175,13 +170,6 @@ export default async function RootLayout({
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         <StructuredData locale={locale as Locale} />
         <SmoothScroll />
-
-        {/* The persistent object, per the supplied reference: one field that
-            stays on screen for the whole scroll and transforms as you travel,
-            rather than a loop playing under each section. `fixed` is what makes
-            it persistent; `-z-10` puts it behind every section while still
-            painting over the body's own background. */}
-        <NodeField className="fixed inset-0 -z-10" />
 
         {children}
       </body>

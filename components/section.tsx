@@ -10,34 +10,16 @@ export function Section({
   headingId,
   children,
   className,
-  fieldX = 0,
-  fieldZoom = 1,
 }: {
   id?: string;
   headingId: string;
   children: React.ReactNode;
   className?: string;
-  /**
-   * Where this section wants the node field, as a fraction of viewport width.
-   * Positive pushes the field right, which means the copy reads against it on
-   * the left. Alternating the sign down the page is what produces the
-   * left/right rhythm in the reference.
-   */
-  fieldX?: number;
-  /** How close the field sits in this section. Rises monotonically down the page. */
-  fieldZoom?: number;
 }) {
   return (
     <section
       id={id}
       aria-labelledby={headingId}
-      // Read by NodeField, which blends every marked element by how near its
-      // centre is to the middle of the viewport. Declaring the pose here rather
-      // than listing section ids inside the canvas component means a new
-      // section joins the choreography by adding two props.
-      data-field-scene=""
-      data-field-x={fieldX}
-      data-field-zoom={fieldZoom}
       className={cn("scroll-mt-24 px-3 py-20 md:px-6 md:py-28", className)}
     >
       <div className="mx-auto w-full max-w-[1400px]">{children}</div>
@@ -90,15 +72,10 @@ export function DarkPanel({
   return (
     <div
       className={cn(
-        // Translucent, not opaque. The node field is a fixed layer behind the
-        // whole document now, and an opaque panel would punch a black hole in
-        // it four times down the page. At 72% the field still reads through as
-        // texture while body copy keeps its contrast.
-        //
-        // No `backdrop-blur` — CLAUDE.md bans glassmorphism, and a blurred
-        // panel over a moving field is the most expensive thing this page could
-        // ask a compositor to do.
-        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background/72 text-foreground",
+        // Opaque. The translucency here existed only so the node field could read
+        // through four panels down the page. The field is gone; a panel that is
+        // almost-but-not-quite the page background is just a rendering cost.
+        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background text-foreground",
         "px-6 py-16 md:rounded-[2rem] md:px-10 md:py-20 lg:px-14",
         className,
       )}

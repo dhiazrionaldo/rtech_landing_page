@@ -28,7 +28,7 @@ export function Team({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="tim" headingId="team-heading" fieldX={-0.26} fieldZoom={1.45}>
+    <Section id="tim" headingId="team-heading">
       <DarkPanel glow={false}>
         <SectionHeader
           badge={t.team.badge}

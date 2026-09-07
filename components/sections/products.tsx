@@ -20,7 +20,7 @@ export function Products({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="produk" headingId="products-heading" fieldX={-0.24} fieldZoom={1.8}>
+    <Section id="produk" headingId="products-heading">
       {/* Glow on, unlike the About panel. Here it has a source: three lit
           screens sitting on the panel, throwing light down into it. */}
       <DarkPanel>
