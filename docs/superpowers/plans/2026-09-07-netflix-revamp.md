@@ -27,6 +27,8 @@ Every task's requirements implicitly include this section. Values are copied ver
 - **Media:** video is never the LCP element. Autoplay requires `muted` + `playsInline`. `preload="none"`. Decorative video is `aria-hidden="true"`.
 - **Verification per task:** `npm run build`, `npm run lint`, `npm run typecheck`, and `npm test` must all pass before a task is committed.
 - **Tests import by relative path with an explicit `.ts` extension**, never through the `@/` alias, and never import a module that imports an image.
+- **Any module reachable from a test must use explicit `.ts` extensions on its own relative imports too** (`./i18n.ts`, not `./i18n`). Node's ESM resolver does not auto-append extensions the way Next's bundler does; without them the test fails at run time with `ERR_MODULE_NOT_FOUND`. Verified in Task 1. `allowImportingTsExtensions` makes this legal for `tsc`, `lint` and `build` alike.
+- **A module reachable from a test must not import a React component library.** Keep data modules free of `lucide-react`: store an icon *id* and map it to a component in the component layer. This also stops the chat route handler bundling an icon set to build a text prompt.
 
 ---
 
@@ -362,7 +364,9 @@ translucency existed only to let the field read through."
 **Interfaces:**
 - Consumes: `Locale` from `content/i18n.ts`, `Fillable`/`pending` from `content/pending.ts`.
 - Produces:
-  - `capabilities: Record<Locale, Capability[]>` where `Capability = { id: CapabilityId; name: string; line: string; body: string; icon: LucideIcon }` and `CapabilityId = "ai-agents" | "web-apps" | "erp" | "ai-apps" | "hardware"`.
+  - `capabilities: Record<Locale, Capability[]>` where `Capability = { id: CapabilityId; name: string; line: string; body: string; icon: CapabilityIconId }`, `CapabilityId = "ai-agents" | "web-apps" | "erp" | "ai-apps" | "hardware"`, and `CapabilityIconId = "bot" | "layout-grid" | "workflow" | "boxes" | "cpu"`.
+  - `CAPABILITY_IDS` and `CAPABILITY_ICON_IDS`, both `as const` arrays.
+  - The icon-id-to-component map lives in the component layer (Task 6), never here.
   - `Product` in `copy.text.ts` extended with `slug: string`, `sector: string`, `status: "in-production" | "delivered"`, `year: number`, `stack: string[]`, `metrics?: { label: string; value: Fillable }[]`.
 
 - [ ] **Step 1: Write the failing test**
@@ -373,7 +377,11 @@ Create `content/capabilities.test.ts`:
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { capabilities, CAPABILITY_IDS } from "./capabilities.ts";
+import {
+  capabilities,
+  CAPABILITY_ICON_IDS,
+  CAPABILITY_IDS,
+} from "./capabilities.ts";
 
 test("both locales define all five capabilities in the same order", () => {
   for (const locale of ["en", "id"] as const) {
@@ -385,13 +393,16 @@ test("both locales define all five capabilities in the same order", () => {
   }
 });
 
-test("every capability has a name, a line, a body and an icon", () => {
+test("every capability has a name, a line, a body and a known icon id", () => {
   for (const locale of ["en", "id"] as const) {
     for (const c of capabilities[locale]) {
       assert.ok(c.name.length > 0, `${locale} ${c.id} name`);
       assert.ok(c.line.length > 0, `${locale} ${c.id} line`);
       assert.ok(c.body.length > 0, `${locale} ${c.id} body`);
-      assert.equal(typeof c.icon, "function", `${locale} ${c.id} icon`);
+      assert.ok(
+        CAPABILITY_ICON_IDS.includes(c.icon),
+        `${locale} ${c.id} icon must be one of ${CAPABILITY_ICON_IDS.join(", ")}`,
+      );
     }
   }
 });
@@ -413,9 +424,7 @@ Expected: FAIL — `./capabilities.ts` does not exist.
 Create `content/capabilities.ts`:
 
 ```ts
-import { Bot, Boxes, Cpu, LayoutGrid, Workflow, type LucideIcon } from "lucide-react";
-
-import type { Locale } from "./i18n";
+import type { Locale } from "./i18n.ts";
 
 /**
  * The five service lines, in the order they appear in the first rail.
@@ -434,6 +443,24 @@ export const CAPABILITY_IDS = [
 
 export type CapabilityId = (typeof CAPABILITY_IDS)[number];
 
+/**
+ * Icons are named here and resolved to components in the component layer.
+ *
+ * This module must stay importable by `node --test`, and it is also pulled in
+ * by `lib/chat/grounding.ts`, which builds a text prompt inside a serverless
+ * route. Neither has any use for an icon set. A string id costs nothing and
+ * keeps both clean.
+ */
+export const CAPABILITY_ICON_IDS = [
+  "bot",
+  "layout-grid",
+  "workflow",
+  "boxes",
+  "cpu",
+] as const;
+
+export type CapabilityIconId = (typeof CAPABILITY_ICON_IDS)[number];
+
 export type Capability = {
   id: CapabilityId;
   name: string;
@@ -441,15 +468,7 @@ export type Capability = {
   line: string;
   /** One sentence of substance under the claim. */
   body: string;
-  icon: LucideIcon;
-};
-
-const icons: Record<CapabilityId, LucideIcon> = {
-  "ai-agents": Bot,
-  "web-apps": LayoutGrid,
-  erp: Workflow,
-  "ai-apps": Boxes,
-  hardware: Cpu,
+  icon: CapabilityIconId;
 };
 
 const en: Capability[] = [
@@ -458,35 +477,35 @@ const en: Capability[] = [
     name: "AI Agents",
     line: "Software that does the step, not just the screen",
     body: "Agents that read your data, decide, and act inside the systems you already run.",
-    icon: icons["ai-agents"],
+    icon: "bot",
   },
   {
     id: "web-apps",
     name: "Custom Web Apps",
     line: "The application your process actually needs",
     body: "Built around your workflow, instead of bending your workflow around someone's product.",
-    icon: icons["web-apps"],
+    icon: "layout-grid",
   },
   {
     id: "erp",
     name: "ERP Integration",
     line: "One source of truth across the systems you already bought",
     body: "SAP, Oracle, in-house. Connected, so nobody re-types the same number twice.",
-    icon: icons.erp,
+    icon: "workflow",
   },
   {
     id: "ai-apps",
     name: "AI Applications",
     line: "Forecasting, vision and decision support on your own data",
     body: "Prediction and analysis that sits where the operator already works.",
-    icon: icons["ai-apps"],
+    icon: "boxes",
   },
   {
     id: "hardware",
     name: "Hardware & IT Services",
     line: "We supply and service the machines it runs on",
     body: "Servers, edge devices, field tablets, procurement and support. On-premise, where the data has to stay.",
-    icon: icons.hardware,
+    icon: "cpu",
   },
 ];
 
@@ -496,35 +515,35 @@ const id: Capability[] = [
     name: "Agen AI",
     line: "Perangkat lunak yang mengerjakan langkahnya, bukan cuma layarnya",
     body: "Agen yang membaca data Anda, mengambil keputusan, dan bertindak di dalam sistem yang sudah Anda pakai.",
-    icon: icons["ai-agents"],
+    icon: "bot",
   },
   {
     id: "web-apps",
     name: "Aplikasi Web Custom",
     line: "Aplikasi yang memang dibutuhkan proses Anda",
     body: "Dibangun mengikuti alur kerja Anda, bukan memaksa alur kerja mengikuti produk orang lain.",
-    icon: icons["web-apps"],
+    icon: "layout-grid",
   },
   {
     id: "erp",
     name: "Integrasi ERP",
     line: "Satu sumber data untuk sistem yang sudah Anda beli",
     body: "SAP, Oracle, atau sistem internal. Tersambung, jadi tidak ada angka yang diketik ulang dua kali.",
-    icon: icons.erp,
+    icon: "workflow",
   },
   {
     id: "ai-apps",
     name: "Aplikasi AI",
     line: "Prediksi, computer vision, dan dukungan keputusan di atas data Anda sendiri",
     body: "Analisis yang muncul di tempat operator sudah bekerja.",
-    icon: icons["ai-apps"],
+    icon: "boxes",
   },
   {
     id: "hardware",
     name: "Perangkat Keras dan Layanan IT",
     line: "Kami menyediakan dan merawat mesin tempat sistemnya berjalan",
     body: "Server, perangkat edge, tablet lapangan, pengadaan, dan dukungan. On-premise, di tempat datanya memang harus tinggal.",
-    icon: icons.hardware,
+    icon: "cpu",
   },
 ];
 
@@ -1239,11 +1258,28 @@ work than a logo band two screens down."
 Create `components/sections/capabilities-rail.tsx`:
 
 ```tsx
+import { Bot, Boxes, Cpu, LayoutGrid, Workflow, type LucideIcon } from "lucide-react";
+
 import { Rail } from "@/components/rail/rail";
 import { RAIL_CARD_WIDTH } from "@/components/rail/rail-card";
-import { capabilities } from "@/content/capabilities";
+import { capabilities, type CapabilityIconId } from "@/content/capabilities";
 import { copy } from "@/content/copy";
 import type { Locale } from "@/content/i18n";
+
+/**
+ * Icon ids resolve to components here, not in `content/capabilities.ts`.
+ *
+ * That module is imported by `node --test` and by the chat route's grounding
+ * builder, and neither has any use for an icon set. Keeping the mapping in the
+ * component layer is what lets the data module stay pure.
+ */
+const ICONS: Record<CapabilityIconId, LucideIcon> = {
+  bot: Bot,
+  "layout-grid": LayoutGrid,
+  workflow: Workflow,
+  boxes: Boxes,
+  cpu: Cpu,
+};
 
 /**
  * The five service lines.
@@ -1262,7 +1298,9 @@ export function CapabilitiesRail({ locale }: { locale: Locale }) {
       titleId="capabilities-heading"
       labels={{ prev: t.rails.prev, next: t.rails.next }}
     >
-      {capabilities[locale].map(({ id, name, line, body, icon: Icon }) => (
+      {capabilities[locale].map(({ id, name, line, body, icon }) => {
+        const Icon = ICONS[icon];
+        return (
         <li
           key={id}
           className={`flex shrink-0 snap-start flex-col rounded-2xl border border-border bg-card p-6 ${RAIL_CARD_WIDTH}`}
@@ -1274,7 +1312,8 @@ export function CapabilitiesRail({ locale }: { locale: Locale }) {
           <p className="mt-2 text-[0.9375rem] leading-snug text-foreground">{line}</p>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{body}</p>
         </li>
-      ))}
+        );
+      })}
     </Rail>
   );
 }
