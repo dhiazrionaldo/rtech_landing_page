@@ -23,6 +23,7 @@ Five capabilities now have to fit on one page: AI agents, custom web application
 | D7 | Chatbot dependencies | **Zero new packages.** Raw `fetch` in a route handler. |
 | D8 | Deploy target | Vercel |
 | D9 | Chatbot UI | Floating dock, bottom-right |
+| D10 | Test runner | Node's built-in `node:test`. Zero new packages. |
 
 ### D1 in full — why hardware is the moat, not the dilution
 
@@ -371,6 +372,24 @@ export type Product = {
 
 `metrics` uses the existing `Fillable` / `pending()` machinery, so an unfilled outcome metric is a type-level fact and can never render as a visible placeholder.
 
+### Splitting text out of `copy.ts`
+
+`content/copy.ts` currently imports six image binaries through the `@/public/...` alias. Verified on Node 24: neither an image extension nor a `@/` alias resolves outside the bundler, so `copy.ts` cannot be imported by `node --test` at all (`ERR_UNKNOWN_FILE_EXTENSION`, `ERR_MODULE_NOT_FOUND`).
+
+The fix is a split that is worth doing on its own merits:
+
+```
+content/copy.text.ts   all strings, both locales. Relative imports only,
+                       no image imports, no @/ alias. -> importable by
+                       node:test AND by the chatbot grounding module.
+content/copy.ts        composes copy.text.ts with the poster and logo
+                       assets. What components import. Unchanged API.
+```
+
+Two things fall out of it. The copy-invariant test gets a clean target, and `lib/chat/grounding.ts` stops pulling six image binaries into a server route whose only job is to build a prompt string. It also matches `CLAUDE.md`'s preference for smaller, well-bounded units.
+
+`copy.text.ts` needs no alias rewrite: `./pending` and `./i18n` are already relative in the current file. Only the six image lines move.
+
 Per `CLAUDE.md`, every card links to a real crawlable `/work/[slug]` page. Those routes do not exist yet and are **in scope for stage 2**, with `generateMetadata`, `opengraph-image.tsx`, and `CreativeWork` JSON-LD each.
 
 ## 12. Components
@@ -452,10 +471,14 @@ Mobile and `prefers-reduced-motion` get poster only, and no video bytes are fetc
 
 TDD per `superpowers:test-driven-development`, on the parts where a test is meaningful.
 
-**Open question for the client — no test runner exists in `package.json` today, and `CLAUDE.md` forbids adding dependencies without asking.** Two options:
+**Runner: Node's built-in `node:test`.** Zero dependencies, consistent with D7. `"test": "node --test"` in `package.json`; `devDependencies` unchanged.
 
-- **Node's built-in `node:test`** — zero dependencies, works today. Preferred, consistent with D7.
-- **Vitest** — better DX and watch mode, but a new devDependency needing sign-off.
+Verified on this machine (Node v24.16.0): native TypeScript type-stripping works, so `.test.ts` files run with no build step and no loader.
+
+Two constraints follow from having no bundler, and both are handled by the `copy.text.ts` split in §11:
+
+- Test files import by **relative path**, never through the `@/` alias.
+- No test imports a module that imports an image.
 
 Tests to write first, in order:
 
@@ -492,5 +515,4 @@ Stage 4 needs `OPENAI_API_KEY` in `.env.local` to test end to end. The build is 
 | `OPENAI_API_KEY` and confirmed model id | stage 4 |
 | Trademark clearance for the six client marks | launch |
 | Real outcome metrics, if any exist | typed slots are ready and empty |
-| Test runner decision (`node:test` vs Vitest) | stage 2 |
 | Verification of the draft Indonesian copy | stage 2 |
