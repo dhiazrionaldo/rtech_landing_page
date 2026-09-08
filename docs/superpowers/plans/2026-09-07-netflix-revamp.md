@@ -2341,6 +2341,205 @@ untouched. No --primary in the scene; orange stays with the CTA."
 ```
 
 **PAUSE FOR REVIEW.** Phase 2 is CLAUDE.md stage 3 complete.
+---
+
+### Task 10b: Fixed layer, section choreography, and a richer graph
+
+Client direction after seeing Task 10 render: the object is right, but it should be a **fixed layer that persists down the page**, moving to the **left or right** side depending on which section you are in, with **more nodes**.
+
+Task 10 left two known defects the rate-limited agent reported before it died: node labels clip off the right edge, and the plinth label sits off-canvas. Both are fixed here.
+
+**Files:**
+- Modify: `content/architecture.ts`, `content/architecture.test.ts`
+- Modify: `components/motion/architecture.tsx`, `components/motion/architecture-scene.tsx`
+- Modify: `components/sections/billboard.tsx`, `app/[locale]/page.tsx`, `components/rail/rail.tsx`, `components/section.tsx`
+- Modify: `MOTION.md`
+
+**Interfaces:**
+- Consumes: `architecture`, `resolveToken`, `registerScrollTrigger()`.
+- Produces: `Architecture` mounts once per page as a fixed layer, not inside the billboard. Sections declare a pose with `data-object-x`.
+
+#### One tension, stated once
+
+`CLAUDE.md` says "One orchestrated 3D moment per page. Everything around it stays quiet." A fixed object present through every section is a continuous presence rather than a single moment. The client has asked for it explicitly having seen the alternative, so it ships — with two mitigations that keep the rest of the page quiet:
+
+1. The layer sits **behind all content at reduced opacity**, under the existing scrims. Content legibility is the gate, not the object.
+2. Nothing else on the page gains motion. The rails keep their single on-enter stagger and nothing new animates.
+
+If body copy anywhere becomes harder to read than it was in Phase 1, the object's opacity is too high — reduce it, do not adjust the type.
+
+- [ ] **Step 1: Extend the graph, tests first**
+
+Update `content/architecture.test.ts` to assert the richer shape BEFORE changing the data:
+
+```ts
+test("the graph is rich enough to read as a system, not a diagram of three boxes", () => {
+  assert.ok(architecture.nodes.length >= 12, `only ${architecture.nodes.length} nodes`);
+  assert.ok(architecture.edges.length >= 10, `only ${architecture.edges.length} edges`);
+});
+
+test("every tier is populated", () => {
+  const ys = new Set(architecture.nodes.map((n) => n.position[1]));
+  assert.ok(ys.size >= 4, "nodes must occupy at least four distinct tiers");
+});
+
+test("source systems we did not build are unowned", () => {
+  const sources = architecture.nodes.filter((n) => n.capability === null);
+  assert.ok(sources.length >= 3, "at least three client-owned source systems");
+});
+
+test("every capability except erp-integration appears at least once", () => {
+  const claimed = new Set(
+    architecture.nodes.map((n) => n.capability).filter(Boolean),
+  );
+  for (const id of ["ai-agents", "ai-apps", "web-apps", "hardware"] as const) {
+    assert.ok(claimed.has(id), `no node stands for ${id}`);
+  }
+});
+```
+
+Run `npm test` and watch the new ones fail.
+
+- [ ] **Step 2: Write the richer graph**
+
+Replace the `nodes` and `edges` arrays in `content/architecture.ts`. Every node stays a real, labelled component of work RTECH has actually shipped — `vision` is the HSSE inspection system, `extraction` is FIFO's vendor-document reading, `forecast` is OPTIGAIN, `mobile` is the HR agent's app. Nothing here is invented.
+
+```ts
+const nodes: ArchNode[] = [
+  // Tier 1 — systems the client already bought. Not ours.
+  { id: "erp",         label: { en: "ERP",                id: "ERP" },                position: [-2.4, 3.0,  0.0], capability: null },
+  { id: "hris",        label: { en: "HRIS",               id: "HRIS" },               position: [-0.8, 3.0, -0.4], capability: null },
+  { id: "wms",         label: { en: "WMS",                id: "WMS" },                position: [ 0.8, 3.0, -0.4], capability: null },
+  { id: "scada",       label: { en: "SCADA",              id: "SCADA" },              position: [ 2.4, 3.0,  0.0], capability: null },
+
+  // Tier 2 — what we build to connect them.
+  { id: "integration", label: { en: "Integration layer",  id: "Lapisan integrasi" },  position: [-0.9, 1.5,  0.2], capability: "erp" },
+  { id: "pipeline",    label: { en: "Data pipeline",      id: "Alur data" },          position: [ 0.9, 1.5, -0.2], capability: "erp" },
+
+  // Tier 3 — the AI capabilities, each one a system we shipped.
+  { id: "agent",       label: { en: "AI agent",           id: "Agen AI" },            position: [-2.2, 0.0,  0.3], capability: "ai-agents" },
+  { id: "forecast",    label: { en: "Forecasting",        id: "Prediksi" },           position: [-0.75, 0.0, 0.0], capability: "ai-apps" },
+  { id: "vision",      label: { en: "Computer vision",    id: "Computer vision" },    position: [ 0.75, 0.0, 0.0], capability: "ai-apps" },
+  { id: "extraction",  label: { en: "Document reading",   id: "Pembacaan dokumen" },  position: [ 2.2, 0.0, -0.3], capability: "ai-agents" },
+
+  // Tier 4 — where the operator actually works.
+  { id: "tablet",      label: { en: "Field tablet",       id: "Tablet lapangan" },    position: [-1.5, -1.5, 0.2], capability: "web-apps" },
+  { id: "command",     label: { en: "Command centre",     id: "Pusat kendali" },      position: [ 0.0, -1.5, 0.0], capability: "web-apps" },
+  { id: "mobile",      label: { en: "Mobile app",         id: "Aplikasi mobile" },    position: [ 1.5, -1.5, 0.2], capability: "web-apps" },
+
+  // Tier 5 — the ground the whole thing stands on. Deliberately edgeless.
+  { id: "onprem",      label: { en: "On-premise server",  id: "Server on-premise" },  position: [ 0.0, -2.9, 0.0], capability: "hardware" },
+];
+
+const edges: ArchEdge[] = [
+  { from: "erp",         to: "integration" },
+  { from: "hris",        to: "integration" },
+  { from: "wms",         to: "pipeline" },
+  { from: "scada",       to: "pipeline" },
+  { from: "integration", to: "agent" },
+  { from: "integration", to: "forecast" },
+  { from: "pipeline",    to: "vision" },
+  { from: "pipeline",    to: "extraction" },
+  { from: "agent",       to: "tablet" },
+  { from: "agent",       to: "mobile" },
+  { from: "forecast",    to: "command" },
+  { from: "vision",      to: "command" },
+  { from: "extraction",  to: "tablet" },
+];
+```
+
+Add the four new ids to `ARCH_NODE_IDS`. Every edge still descends and the graph is still acyclic — the existing tests enforce both, so run them.
+
+- [ ] **Step 3: Move the canvas to a fixed layer**
+
+Today `Architecture` mounts inside `billboard.tsx`. Move it: mount it ONCE in `app/[locale]/page.tsx`, before `<SiteNav>`, in a fixed full-viewport layer.
+
+- Container: `fixed inset-0 -z-10 pointer-events-none`, `aria-hidden="true"`.
+- It must sit behind every section. Confirm no section paints an opaque background over it — `DarkPanel` was made opaque in Task 2, so **check it**: if the About, Products or Contact panels hide the object entirely, that is the tension in this task showing up, and the panels need a translucency that keeps body copy legible. Report what you find rather than guessing.
+- The `sr-only` architecture description moves with it and stays server-rendered.
+- All existing guards stay exactly as they are: no WebGL below 768px, none under `prefers-reduced-motion: reduce`, `dpr={[1, 1.5]}`.
+
+- [ ] **Step 4: Section choreography — left, right, left**
+
+Sections declare where they want the object. This is the same mechanism the deleted `NodeField` used, and it is a good one: a new section joins the choreography by adding one prop.
+
+Add an optional `objectX?: number` prop (range −1 to 1, negative = object sits left) to both `Section` (`components/section.tsx`) and `Rail` (`components/rail/rail.tsx`), rendered as `data-object-x={objectX}` on the section element. Do not reintroduce the old `fieldZoom`.
+
+Assign, alternating down the page:
+
+| Section | `objectX` | Object sits |
+|---|---|---|
+| Billboard | `0.55` | right |
+| Capabilities rail | `-0.55` | left |
+| Work rail | `0.55` | right |
+| Industries rail | `-0.55` | left |
+| About | `0.55` | right |
+| Process | `-0.55` | left |
+| Contact | `0` | centre, and fade it out — the CTA is the moment there, not the object |
+
+In the scene, each frame read every `[data-object-x]` element, find which is nearest the viewport's vertical centre, and ease the object's x toward that pose. Ease, do not snap — a hard jump at each section boundary will read as a bug. Use a simple damped lerp, not a GSAP tween per section.
+
+- [ ] **Step 5: Fix the two known defects**
+
+Both were reported by the previous agent before it was cut off:
+
+1. **Labels clip off the right edge.** The rightmost nodes (`scada`, `extraction`) sit at x ≈ 2.4 and their labels run past the canvas. Fix by anchoring label text so it grows inward on the outer columns, or by widening the camera frustum — not by shortening the labels, which are the point of the object.
+2. **The plinth label is off-canvas.** `onprem` sits lowest and its label falls below the visible area. Fix the framing.
+
+Verify by screenshot at 1440x900 and at 1024x768, and describe what you see.
+
+- [ ] **Step 6: Keep it cheap**
+
+A fixed layer is visible for the whole page, so it cannot rely on an off-screen pause the way a hero-only object could.
+
+- `frameloop="demand"`. Call `invalidate()` from a rAF-throttled scroll handler and from a pulse tick no faster than **20fps**. Do not run a 60fps loop for the length of the page.
+- Stop invalidating entirely when `document.visibilityState === "hidden"`.
+- Keep `dpr={[1, 1.5]}`.
+
+- [ ] **Step 7: Measure — this is a gate**
+
+```bash
+npm run build && npm start
+```
+
+Lighthouse, mobile preset, throttled, median of three, against `http://localhost:3000/en`.
+
+**Mobile must be unchanged from Phase 1**, because the scene never loads below 768px. If it moved, something is loading that should not be — find it.
+
+Then desktop: record Performance, LCP, CLS and **INP**. INP matters more than it did before — a fixed canvas invalidating on scroll competes with the main thread for the whole page, which the hero-only version did not.
+
+- Mobile Performance **≥ 90** and CLS **< 0.1** — required.
+- If desktop INP exceeds **200ms**, reduce the pulse tick rate or drop `dpr` to `[1, 1.25]` before considering anything else.
+- If it still misses: **cut the scene, not the budget.** Report the numbers.
+
+Also verify by hand: body copy in every section is no harder to read than it was in Phase 1. If it is, the layer's opacity is too high.
+
+- [ ] **Step 8: Record and commit**
+
+Update the `MOTION.md` row for trigger 7 to describe what it now does — a fixed layer easing between per-section poses, rather than a one-way hero exit — and add the measured numbers.
+
+```bash
+git add -A
+git commit -m "feat: fixed architecture layer with per-section choreography
+
+The object is now a fixed layer that persists down the page and eases
+left or right depending on which section holds the viewport centre,
+instead of exiting after the hero. Sections declare their pose with one
+prop, which is the mechanism the old node field used and the best part
+of it.
+
+The graph is richer: fourteen real labelled nodes across five tiers.
+Computer vision is the HSSE inspection system, document reading is
+FIFO's vendor selection, forecasting is OPTIGAIN, the mobile app is the
+HR agent. Nothing here is invented, which is what keeps it a diagram of
+our work rather than a picture of AI.
+
+Also fixes the two defects the previous agent reported before it was
+rate-limited: labels clipping off the right edge, and the plinth label
+sitting off-canvas."
+```
+
+**PAUSE FOR REVIEW.**
 
 ---
 
