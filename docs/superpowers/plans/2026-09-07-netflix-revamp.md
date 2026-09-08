@@ -2483,17 +2483,48 @@ In `components/rail/rail-card.tsx`, add an optional `previewSlug` prop. When pre
 
 In `components/sections/work-rail.tsx`, pass `previewSlug={product.slug}` on each card, and render one `<PreviewVideo trackId="produk-track" sources={previewSources} />` after the rail, where `previewSources` maps slug to the preview clip path created in Task 17. Until Task 17 exists, point `sources` at an empty object — the component is a no-op with no source, which keeps this task independently shippable.
 
-- [ ] **Step 3: Verify**
+- [ ] **Step 3: Disable rail controls when the track does not overflow**
+
+Carried over from the Task 9 review, which found this and correctly refused to fix it
+inside an unrelated task.
+
+The industries rail has three cards that fit without overflow at every viewport, so
+its prev/next buttons are rendered, focusable, labelled — and completely inert. A
+keyboard user tabs to a control, activates it, and nothing happens. That is a WCAG
+4.1.2 concern, not a cosmetic one.
+
+**Disable, do not hide.** An earlier task deliberately made the controls always visible
+rather than hover-only so touch users could reach them; hiding them now would undo that
+for the rails that genuinely overflow, and a control that appears and disappears as the
+viewport changes is worse than one that greys out.
+
+In `components/rail/rail-controls.tsx` (already a client component):
+
+- On mount, and on every resize, compare the track's `scrollWidth` to its `clientWidth`.
+  Use a `ResizeObserver` on the track rather than a window resize listener — the track
+  can change size without the window doing so.
+- When there is no overflow, set both buttons `disabled` and `aria-disabled="true"`, and
+  give them a visibly reduced state using existing tokens (no new colours).
+- Disconnect the observer on unmount.
+- Re-check after fonts and images settle; a track that fits before the poster loads may
+  overflow afterwards.
+
+Verify: at desktop width the industries rail's arrows are visibly disabled and skipped
+or announced as disabled by the keyboard, while the work and capabilities rails' arrows
+remain live. Then narrow the window until the industries rail overflows and confirm its
+arrows become enabled.
+
+- [ ] **Step 4: Verify**
 
 Run: `npm run typecheck && npm run lint && npm run build && npm test`
 
 By hand: hover a card briefly and confirm the Network panel shows **no** video request; hover for over 400ms and confirm exactly one request; move along the rail quickly and confirm at most one video element exists in the DOM at any time (`document.querySelectorAll('video').length`); tab through the rail and confirm focus triggers the same behaviour; scroll the rail out of view and confirm the video detaches.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: shared hover-preview video, one per rail
+git commit -m "feat: shared hover-preview video, and disable inert rail controls
 
 Six video elements would ask the decoder for six streams. One shared
 element relocated into the dwelt-on card decodes at most one, and a
