@@ -130,7 +130,11 @@ export function About({ locale }: { locale: Locale }) {
 
         {/* Two founders, folded into About rather than kept as their own
             section. See content/copy.text.ts TeamMember doc for the note on
-            why `photo` stays unset. */}
+            why `photo` stays unset today: no stand-in avatar renders in its
+            place, so the block reads as deliberately text-led rather than as
+            a "meet the team" grid missing its pictures — the same register
+            as the client marks and mission/vision above, which are also
+            typographic with no imagery. */}
         <div className="mt-16 border-t border-border pt-10">
           <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
             {t.about.teamLabel}
@@ -139,9 +143,18 @@ export function About({ locale }: { locale: Locale }) {
           <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:max-w-3xl">
             {t.team.members.map((member) => (
               <li key={member.id} className="flex flex-col gap-1">
-                <p className="font-heading text-base font-semibold tracking-[-0.01em]">
+                {member.photo ? (
+                  <Image
+                    src={member.photo}
+                    alt={member.name}
+                    width={96}
+                    height={96}
+                    className="mb-2 size-14 rounded-full object-cover"
+                  />
+                ) : null}
+                <h3 className="font-heading text-base font-semibold tracking-[-0.01em]">
                   {member.name}
-                </p>
+                </h3>
                 <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-metric">
                   {member.role}
                 </p>

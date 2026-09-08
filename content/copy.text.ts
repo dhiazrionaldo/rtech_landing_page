@@ -215,9 +215,6 @@ type Dict = {
     clientLabel: string;
   };
   team: {
-    badge: string;
-    heading: string;
-    body: string;
     members: TeamMember[];
   };
   contact: {
@@ -640,14 +637,6 @@ export const copy: Record<Locale, Dict> = {
       clientLabel: "Klien",
     },
     team: {
-      badge: "Tim",
-      // The client asked for "Meet the Team". Kept in English on the English
-      // page and translated here: every other heading on the Indonesian page is
-      // Indonesian, and one English heading in the middle of them reads as an
-      // oversight rather than as a choice. Say the word if you want the English
-      // phrase on both.
-      heading: "Kenali tim kami.",
-      body: "Orang yang datang ke sesi scoping adalah orang yang mengerjakan sistemnya.",
       members: teamId,
     },
     contact: {
@@ -817,9 +806,6 @@ export const copy: Record<Locale, Dict> = {
       clientLabel: "Client",
     },
     team: {
-      badge: "Team",
-      heading: "Meet the team.",
-      body: "The people who turn up to the scoping call are the people who build the system.",
       members: teamEn,
     },
     contact: {
