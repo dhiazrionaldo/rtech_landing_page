@@ -39,6 +39,7 @@ page against the performance budget.
 | 4 | Process rail | `ScrubRail` in `process.tsx` | `top 75%` | `center center` | **0.6** | no | `scaleX 0→1`, origin left |
 | ~~5~~ | ~~Contact reassurance cards~~ | removed | — | — | — | — | The three cards are one static line of copy now. See the note in `content/copy.ts` on why three claims about our own candour was a formula. |
 | 6 | Stat counters (`3`, `10`) | `CountUp` in `hero.tsx` | `top 92%` | — | no | yes | integer 0→value over 1.1s |
+| 7 | Rail cards (all three rails) | `Reveal` in `rail.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 16→0`, stagger 0.06s |
 
 Trigger 4 is the only scrubbed animation on the page, and deliberately so. The
 rail stands for a run of work with a direction, so tying how much of it is drawn

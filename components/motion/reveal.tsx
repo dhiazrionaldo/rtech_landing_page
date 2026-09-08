@@ -27,6 +27,7 @@ import { registerScrollTrigger } from "@/lib/motion";
  */
 export function Reveal({
   as: Tag = "div",
+  id,
   children,
   stagger = 0.07,
   y = 20,
@@ -37,6 +38,10 @@ export function Reveal({
    *  this usually needs to BE the grid or list rather than wrap one — an extra
    *  <div> around a <dl> leaves the stagger with exactly one thing to stagger. */
   as?: "div" | "dl" | "ul" | "ol";
+  /** Forwarded onto the rendered element. Needed whenever something outside
+   *  React finds this element by id — e.g. `RailControls` doing
+   *  `document.getElementById(trackId)` against the rail track. */
+  id?: string;
   children: React.ReactNode;
   /** Seconds between each direct child. 0 animates the block as one piece. */
   stagger?: number;
@@ -97,6 +102,7 @@ export function Reveal({
   return (
     <Tag
       ref={root as React.Ref<never>}
+      id={id}
       // These attributes drive the CSS start state: on the element itself when
       // the block moves as one piece, on its direct children when it staggers.
       {...(stagger ? { "data-reveal-group": "" } : { "data-reveal": "" })}

@@ -1,3 +1,4 @@
+import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 
 import { RailControls } from "./rail-controls";
@@ -45,14 +46,17 @@ export function Rail({
         <RailControls trackId={trackId} labels={labels} />
       </div>
 
-      <ul
+      <Reveal
+        as="ul"
         id={trackId}
+        stagger={0.06}
+        y={16}
         // motion-safe: a reduced-motion user gets an instant jump rather than a
         // 400ms glide they did not ask for.
         className="rail-track mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 motion-safe:scroll-smooth"
       >
         {children}
-      </ul>
+      </Reveal>
     </section>
   );
 }
