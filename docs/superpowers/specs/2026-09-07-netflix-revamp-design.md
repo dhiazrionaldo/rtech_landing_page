@@ -24,6 +24,8 @@ Five capabilities now have to fit on one page: AI agents, custom web application
 | D8 | Deploy target | Vercel |
 | D9 | Chatbot UI | Floating dock, bottom-right |
 | D10 | Test runner | Node's built-in `node:test`. Zero new packages. |
+| D11 | Signature moment | **Supersedes D5.** A 3D labelled system architecture that travels right to left on scroll. The billboard no longer docks. |
+| D12 | 3D stack | `three` + `@react-three/fiber` + `@react-three/drei` added, per the CLAUDE.md stack table. |
 
 ### D1 in full — why hardware is the moat, not the dilution
 
@@ -160,7 +162,83 @@ The design database's recommendation (`#1E1B4B` indigo plus `#22C55E` green, "Mo
 
 On hover-or-focus the card scales to 1.3x, siblings translate away, the poster swaps for muted playing footage, and a drawer expands below with the blurb and a `Book a scoping call` link.
 
-## 7. The signature moment — billboard docks into the rail (D5)
+## 7a. The signature moment — the system architecture (D11, supersedes D5)
+
+The client asked for an interactive 3D brain with AI nodes travelling right to left on
+scroll. `CLAUDE.md` bans wireframe brains and neural-node fields by name, so the
+request was put back to them with alternatives. They chose the alternative: **the same
+mechanic, built from something true.**
+
+### What it depicts
+
+A labelled composite of the architecture RTECH actually ships. Every node is a real
+named component, which is precisely the test `CLAUDE.md` sets: *"If it degrades into
+unlabeled dots and lines, it has become the neural-network cliché."* Labels are the
+difference between a diagram of this company's work and a stock picture of "AI".
+
+```
+        [ ERP ]        [ HRIS ]          source systems the client already bought
+            \            /
+             v          v
+          [ INTEGRATION LAYER ]           what RTECH builds
+             /                      v            v
+      [ AI AGENT ]  [ FORECASTING ]       the two AI capabilities
+            \            /
+             v          v
+          [ FIELD TABLET ]                where the operator actually works
+   ______________________________
+   [      ON-PREMISE SERVER      ]        the plinth everything stands on
+```
+
+The plinth is the argument. `CLAUDE.md` says the audience "worry about where their data
+goes"; rendering the on-premise server as the ground the whole system rests on states
+the answer without a sentence of copy. It is also the fifth capability — hardware —
+made visible.
+
+Pulses travel the edges in one direction: data in from the source systems, decisions
+out to the field. Direction is meaning here, not decoration.
+
+### Motion
+
+- Hero: the object sits on the **right**, oversized, bleeding past the frame.
+- On scroll it travels **right to left** and recedes — scale and opacity down — so it
+  is gone before the first rail. Everything around the signature element stays quiet.
+- GSAP `ScrollTrigger`, **scrubbed but NOT pinned.** Pinning was the expensive and
+  fragile part of D5; a non-pinned scrub costs a fraction and cannot strand the layout.
+
+### Colour
+
+Existing tokens only, and deliberately **no `--primary`**: orange belongs to the CTA
+and nothing else, so the scene stays in the neutral spine plus the teal data ramp.
+
+| Element | Token |
+|---|---|
+| Node wireframes and labels | `--foreground` |
+| Edges | `--border` |
+| Pulses travelling the edges | `--chart-2` / `--chart-3` |
+| On-premise plinth | `--card` |
+
+Three.js cannot parse OKLCH, so token values are resolved through a one-pixel canvas
+round-trip. That is the same technique `lib/token-color.ts` used before it was deleted
+in Task 2. Deleting it was right then (nothing imported it); reintroducing the
+technique now is right too (something does). It comes back as a small module with a
+test, not as the untested original.
+
+### Non-negotiables from CLAUDE.md
+
+- `<Canvas>` in a client component, `dynamic()`-imported with `ssr: false`, wrapped in
+  `<Suspense>` with a static poster fallback.
+- **Never the LCP element.** All copy server-rendered; the billboard poster is LCP.
+- `dpr={[1, 1.5]}`. Rendering paused via `IntersectionObserver` when off-screen.
+- **Below 768px: no WebGL at all.** Static poster. This is also what protects the
+  mobile Lighthouse budget — the phone never downloads three.js.
+- `prefers-reduced-motion: reduce`: static poster, no WebGL, no GSAP.
+- Created inside `gsap.context()`, reverted on unmount, refreshed on resize.
+- One orchestrated moment on the page. The billboard no longer docks.
+
+**If it misses the budget, it gets cut, not the budget.**
+
+## 7b. Superseded: billboard docks into the rail (D5)
 
 One orchestrated moment on the page, per `CLAUDE.md`. Everything else stays quiet.
 
