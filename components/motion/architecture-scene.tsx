@@ -63,8 +63,19 @@ const POSE_SHIFT = 2.2;
  * competing with body copy. Tuned down from an initial pass that made
  * paragraph text next to it noticeably harder to read; see the report for the
  * before/after. Contact fades to 0 — the CTA is the moment there.
+ *
+ * The hero is the one pose exempt from that constraint: there is no body copy
+ * behind the object there, only the billboard's own scrim, so fix-round 1
+ * gives it more presence than the mid-page poses carry — see `HERO_OPACITY`.
  */
 const BASE_OPACITY = 0.16;
+/**
+ * The hero has no paragraph text sitting on the object — only the billboard's
+ * scrim — so the legibility constraint that caps `BASE_OPACITY` doesn't apply
+ * there. This is the page's signature element; at `BASE_OPACITY` alone it
+ * read closer to the floor of visible than a hero object should.
+ */
+const HERO_OPACITY = 0.3;
 const FADE_OPACITY = 0;
 /** Damping rate for both the position ease and the opacity cross-fade. */
 const EASE_LAMBDA = 3.2;
@@ -72,16 +83,19 @@ const EASE_LAMBDA = 3.2;
  * screen for the whole page, not just a hero that pauses off-screen. */
 const TICK_MS = 1000 / 20;
 
-type Pose = { x: number; fadeOut: boolean };
+type Pose = { x: number; opacity: number };
 type PoseRef = { current: Pose };
 
 /**
  * Reads every section's `[data-object-x]` and returns the pose of whichever
  * one is nearest the viewport's vertical centre. `data-object-x="0"` (Contact)
- * reads as "fade out" — the CTA is the moment there, not the object.
+ * reads as "fade out" — the CTA is the moment there, not the object. The
+ * Billboard is the only `[data-object-x]` host that's a `<header>` rather
+ * than a `Section`/`Rail`-rendered `<section>`, which is what tells this
+ * apart from every other 0.55/-0.55 pose without a second data attribute.
  */
 function nearestPose(): Pose {
-  if (typeof document === "undefined") return { x: 0, fadeOut: false };
+  if (typeof document === "undefined") return { x: 0, opacity: BASE_OPACITY };
   const els = document.querySelectorAll<HTMLElement>("[data-object-x]");
   const viewportCenter = window.innerHeight / 2;
 
@@ -99,9 +113,11 @@ function nearestPose(): Pose {
     }
   }
 
-  if (!best) return { x: 0, fadeOut: false };
+  if (!best) return { x: 0, opacity: BASE_OPACITY };
   const raw = Number(best.dataset.objectX ?? "0");
-  return { x: raw * POSE_SHIFT, fadeOut: raw === 0 };
+  const opacity =
+    raw === 0 ? FADE_OPACITY : best.tagName === "HEADER" ? HERO_OPACITY : BASE_OPACITY;
+  return { x: raw * POSE_SHIFT, opacity };
 }
 
 type SceneColors = {
@@ -342,7 +358,7 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
   // there, and resolving up front means the canvas never mounts with the wrong
   // colours and never triggers a cascading re-render.
   const [colors, setColors] = useState<SceneColors>(readColors);
-  const poseRef = useRef<Pose>({ x: 0, fadeOut: false });
+  const poseRef = useRef<Pose>({ x: 0, opacity: BASE_OPACITY });
   const invalidateRef = useRef<(() => void) | null>(null);
   const opacityRef = useRef(0);
 
@@ -365,6 +381,19 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
   // loop for the length of the page. See Step 6/7 in the task brief for why
   // this shape: a fixed layer cannot rely on an off-screen pause the way a
   // hero-only object could.
+  //
+  // Fix-round 1: `frameloop="demand"` does not render a first frame on its
+  // own — nothing is on screen until something calls `invalidate()`. The
+  // pulse tick below does call it every 50ms, but only once `invalidateRef`
+  // is populated, and that happens in `onCreated`, which fires from R3F's
+  // own effect timing, not ours. Waiting on that race meant the object could
+  // sit fully computed but never drawn until the *next* thing that happened
+  // to invalidate — which in practice was the first scroll, because
+  // `onScrollOrResize` also calls `invalidateRef.current?.()`. The fix is to
+  // never depend on that race for the first frame: `onCreated` recomputes
+  // the pose and calls `state.invalidate()` itself, synchronously, the
+  // moment the store's own `invalidate` exists — so the very first paint is
+  // deterministic, not "whatever fires next kicks it off."
   useEffect(() => {
     let rafHandle = 0;
     let scrollScheduled = false;
@@ -373,7 +402,7 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
     const applyOpacity = (dt: number) => {
       const el = host.current;
       if (!el) return;
-      const target = poseRef.current.fadeOut ? FADE_OPACITY : BASE_OPACITY;
+      const target = poseRef.current.opacity;
       opacityRef.current = MathUtils.damp(opacityRef.current, target, EASE_LAMBDA, dt);
       el.style.opacity = opacityRef.current.toFixed(3);
     };
@@ -382,13 +411,17 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
       poseRef.current = nearestPose();
     };
 
+    const recomputeAndInvalidate = () => {
+      recomputePose();
+      invalidateRef.current?.();
+    };
+
     const onScrollOrResize = () => {
       if (scrollScheduled || document.visibilityState === "hidden") return;
       scrollScheduled = true;
       rafHandle = requestAnimationFrame(() => {
         scrollScheduled = false;
-        recomputePose();
-        invalidateRef.current?.();
+        recomputeAndInvalidate();
       });
     };
 
@@ -405,11 +438,20 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
 
     window.addEventListener("scroll", onScrollOrResize, { passive: true });
     window.addEventListener("resize", onScrollOrResize, { passive: true });
+    // Fonts and the poster image can change section offsets after the first
+    // paint — a late webfont swap is the one that reliably bites `Section`'s
+    // sticky badge column and the billboard's own layout (see `lib/motion.ts`
+    // for the identical ScrollTrigger-refresh reasoning). Re-reading the pose
+    // once layout has actually settled catches a section boundary that moved
+    // out from under the first, early measurement.
+    window.addEventListener("load", recomputeAndInvalidate);
+    void document.fonts?.ready?.then(recomputeAndInvalidate);
 
     return () => {
       window.clearInterval(interval);
       window.removeEventListener("scroll", onScrollOrResize);
       window.removeEventListener("resize", onScrollOrResize);
+      window.removeEventListener("load", recomputeAndInvalidate);
       if (rafHandle) cancelAnimationFrame(rafHandle);
     };
   }, []);
@@ -428,7 +470,12 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
         // frustum at both required test sizes — see the report for the numbers.
         camera={{ position: [0, -0.1, 11], fov: 44 }}
         onCreated={(state) => {
+          // The deterministic first frame: capture `invalidate` and use it in
+          // the same breath, rather than trusting some later tick or scroll
+          // event to be the first thing that happens to call it.
           invalidateRef.current = state.invalidate;
+          poseRef.current = nearestPose();
+          state.invalidate();
         }}
       >
         <Diagram locale={locale} colors={colors} poseRef={poseRef} />
