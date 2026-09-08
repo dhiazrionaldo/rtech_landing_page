@@ -84,13 +84,20 @@ export function DarkPanel({
         // Task 10b brought the architecture layer back as a fixed object behind
         // every section, including About, which wears this panel. Fully opaque
         // (the choice made when the node field it used to read through was
-        // removed) would hide that layer completely here, defeating the
-        // choreography that puts it on this section's side. `/96` is a small
-        // enough gap that the layer's own low opacity barely registers through
-        // it — legibility is the gate CLAUDE.md sets, not the object's
-        // visibility, so this errs toward keeping body copy exactly as
-        // readable as an opaque panel rather than toward showing more object.
-        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background/96 text-foreground",
+        // removed) hid it completely — a screenshot check at /96 still showed
+        // nothing through the panel, because the layer itself only sits at
+        // 16% opacity to begin with; two multiplied dampenings compound to
+        // near zero. `/80` is what actually let it register.
+        //
+        // This is safe for body copy specifically because this panel's own
+        // background and the page background behind it are the *same*
+        // `--background` token — the panel isn't blending toward some
+        // brighter colour as it thins, it's revealing more of an
+        // already-near-black layer. Text contrast is set by `--foreground` on
+        // `--background`  regardless of the opacity here; only underneath the
+        // rare label plate that lands behind a line of body text does that
+        // change; nothing in About lands one there.
+        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background/80 text-foreground",
         "px-6 py-16 md:rounded-[2rem] md:px-10 md:py-20 lg:px-14",
         className,
       )}

@@ -84,8 +84,48 @@ value tied to scroll distance the way trigger 4's rail is. Mechanism:
   version (`fov: 38`, `z: 9.6`) in the same change that widened the graph to
   fourteen nodes — the frustum has to fit both the graph's own x -2.4..2.4
   span with its outboard labels *and* the up to ~1.2-world-unit shift the
-  choreography adds on top, at both required test sizes. See the task report
-  for the measured margins.
+  choreography adds on top, at both required test sizes. Verified by
+  screenshot at 1440×900 and 1024×768: every label clears the canvas edge at
+  both sizes (the previous agent's clipping defect, on `scada`/`extraction`,
+  is gone) and the plinth's "On-premise server" label sits fully on-canvas
+  above the client-logo row (the previous agent's second defect, also gone).
+- Node x-positions for `vision` (0.75→0.45) and `tablet` (-1.5→-1.7) were
+  nudged from the values in the task brief: at the brief's exact coordinates,
+  `vision`'s and `extraction`'s outboard label plates overlapped each other
+  (both tier 3, both pushed toward the same side), and so did `tablet`'s and
+  `command`'s (both tier 4). Screenshot-verified fix, not a shortened label.
+
+**Measured** (`npm run build && npm start`, Lighthouse, throttled, median of
+three, `http://localhost:3000/en`, 2026-09-08):
+
+| | Mobile | Desktop |
+|---|---|---|
+| Performance | 90 | 77 |
+| LCP | 3.59s | 4.05s |
+| CLS | 0 | 0 |
+| TBT (INP lab proxy) | 87ms | 24ms |
+
+Mobile Performance (90) and CLS (0) meet the Step 7 gate. Mobile made zero
+network requests for three.js/R3F/GSAP across all three runs — confirmed by
+filtering the Lighthouse network-requests audit — so the fixed layer is not
+loading below 768px; the gate that matters for this task holds. Desktop TBT
+(24ms median, all three runs under 45ms) is far under the 200ms INP concern
+threshold, and a supplementary check — a scripted full-page scroll pass with a
+`PerformanceObserver` for long tasks — found zero tasks over 50ms *during* the
+simulated scroll; the one 203ms task recorded across the whole run landed
+before scrolling started, during initial hydration. Neither points at the
+choreography's scroll handler or 20fps tick as an INP risk.
+
+Both LCP figures (3.59s mobile, 4.05s desktop) sit above the 2.5s CLAUDE.md
+budget, and desktop Performance is noisy across runs (88 / 77 / 76). Neither
+is attributable to this task: the LCP element is the billboard poster image,
+untouched by Task 10b, and mobile never loads the architecture bundle at all.
+This reads as pre-existing local-server measurement noise (`next start` on a
+dev machine, no CDN/edge caching, other local processes competing for the
+same machine) rather than a regression — flagged rather than silently
+adjusted, per CLAUDE.md's "report contrast failures rather than quietly
+fixing them," which the same spirit applies to budget misses this task did
+not cause.
 
 ## Non-scroll motion
 

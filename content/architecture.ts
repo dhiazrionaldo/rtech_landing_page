@@ -62,13 +62,24 @@ const nodes: ArchNode[] = [
   { id: "pipeline",    label: { en: "Data pipeline",      id: "Alur data" },          position: [ 0.9, 1.5, -0.2], capability: "erp" },
 
   // Tier 3 — the AI capabilities, each one a system we shipped.
+  //
+  // `vision` sits at 0.45 rather than a symmetric 0.75: at 0.75 its outboard
+  // label plate ("Computer vision") overlapped `extraction`'s ("Document
+  // reading", or "Pembacaan dokumen" in the longer Indonesian label) — both
+  // outboard-right on the same tier, wide enough that the gap between the
+  // nodes wasn't wide enough for both plates. Nudging the node, not
+  // shortening either label, clears it. See MOTION.md / the task report for
+  // the plate-width arithmetic.
   { id: "agent",       label: { en: "AI agent",           id: "Agen AI" },            position: [-2.2, 0.0,  0.3], capability: "ai-agents" },
   { id: "forecast",    label: { en: "Forecasting",        id: "Prediksi" },           position: [-0.75, 0.0, 0.0], capability: "ai-apps" },
-  { id: "vision",      label: { en: "Computer vision",    id: "Computer vision" },    position: [ 0.75, 0.0, 0.0], capability: "ai-apps" },
+  { id: "vision",      label: { en: "Computer vision",    id: "Computer vision" },    position: [ 0.45, 0.0, 0.0], capability: "ai-apps" },
   { id: "extraction",  label: { en: "Document reading",   id: "Pembacaan dokumen" },  position: [ 2.2, 0.0, -0.3], capability: "ai-agents" },
 
   // Tier 4 — where the operator actually works.
-  { id: "tablet",      label: { en: "Field tablet",       id: "Tablet lapangan" },    position: [-1.5, -1.5, 0.2], capability: "web-apps" },
+  //
+  // `tablet` sits at -1.7 rather than -1.5 for the same reason: at -1.5 its
+  // label plate just touched `command`'s (both outboard-left on this tier).
+  { id: "tablet",      label: { en: "Field tablet",       id: "Tablet lapangan" },    position: [-1.7, -1.5, 0.2], capability: "web-apps" },
   { id: "command",     label: { en: "Command centre",     id: "Pusat kendali" },      position: [ 0.0, -1.5, 0.0], capability: "web-apps" },
   { id: "mobile",      label: { en: "Mobile app",         id: "Aplikasi mobile" },    position: [ 1.5, -1.5, 0.2], capability: "web-apps" },
 
