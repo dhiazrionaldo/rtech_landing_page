@@ -127,6 +127,31 @@ export function About({ locale }: { locale: Locale }) {
             </div>
           ))}
         </Reveal>
+
+        {/* Two founders, folded into About rather than kept as their own
+            section. See content/copy.text.ts TeamMember doc for the note on
+            why `photo` stays unset. */}
+        <div className="mt-16 border-t border-border pt-10">
+          <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
+            {t.about.teamLabel}
+          </p>
+
+          <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:max-w-3xl">
+            {t.team.members.map((member) => (
+              <li key={member.id} className="flex flex-col gap-1">
+                <p className="font-heading text-base font-semibold tracking-[-0.01em]">
+                  {member.name}
+                </p>
+                <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-metric">
+                  {member.role}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {member.bio}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </DarkPanel>
     </Section>
   );

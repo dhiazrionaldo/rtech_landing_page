@@ -151,6 +151,8 @@ type Dict = {
     badge: string;
     heading: string;
     body: string;
+    /** Label above the team roster folded into this section. */
+    teamLabel: string;
     missionLabel: string;
     mission: string;
     /**
@@ -508,7 +510,12 @@ export const copy: Record<Locale, Dict> = {
     },
     process: {
       badge: "Cara kerja",
-      heading: "Fase project kami melalui 4 tahapan ini.",
+      // Was "Fase project kami melalui 4 tahapan ini.": ungrammatical (a
+      // singular "fase" cannot "melalui" four stages) and used the English
+      // spelling "project" where the rest of the Indonesian copy says
+      // "proyek". Rewritten to mirror the English heading's fragment-comma
+      // shape (tell #7) rather than translated word for word.
+      heading: "Empat tahapan, dan Anda bisa berhenti setelah tahap mana pun.",
       // This was the `closing` line, commented out and unrendered. It is the
       // strongest differentiator on the page, so it is now the section body and
       // the long "every team tells the same story" paragraph it replaced is
@@ -525,6 +532,7 @@ export const copy: Record<Locale, Dict> = {
       badge: "Tentang kami",
       heading: "Kami baru selesai kalau sistemnya benar-benar dipakai.",
       body: "Sejak 2018: digitalisasi HSSE, integrasi ERP, command center, hingga Agentic AI yang membantu bisnis dan operasional klien kami.",
+      teamLabel: "Yang akan menangani proyek Anda",
       missionLabel: "Misi",
       // Verbatim from the deck.
       mission:
@@ -695,7 +703,7 @@ export const copy: Record<Locale, Dict> = {
     },
     process: {
       badge: "How we work",
-      heading: "How we work on thos 4 phases",
+      heading: "Four stages, and you can stop after any of them.",
       body: "",
       phaseLabel: "Stage",
       of: "of",
@@ -706,8 +714,9 @@ export const copy: Record<Locale, Dict> = {
     },
     about: {
       badge: "About us",
-      heading: "We are not finished until the system is actually used.",
-      body: "Since 2018: HSSE digitalisation, ERP integration, command centres, and Agentic AI that already solved our clients problems.",
+      heading: "We are not finished until the system is in use.",
+      body: "Since 2018: HSSE digitalisation, ERP integration, command centres, and Agentic AI that already solved our clients' problems.",
+      teamLabel: "Who you'll work with",
       missionLabel: "Mission",
       mission:
         "To deliver adaptive, integrated technology solutions with real operational impact for our clients, through continuous innovation.",
