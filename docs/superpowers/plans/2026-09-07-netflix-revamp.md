@@ -14,7 +14,7 @@
 
 Every task's requirements implicitly include this section. Values are copied verbatim from the spec and `CLAUDE.md`.
 
-- **No new dependencies.** `package.json` `dependencies` and `devDependencies` must be byte-identical at the end of every task. The only permitted `package.json` edit is adding the `test` script in Task 1.
+- **No new dependencies**, with exactly two sanctioned exceptions. `package.json` `dependencies` and `devDependencies` must be byte-identical at the end of every task EXCEPT: Task 1 adds the `test` script, and Task 10 adds `three`, `@react-three/fiber`, `@react-three/drei` and `@types/three` (D12 — these are the stack `CLAUDE.md` itself names). No other task may touch `package.json` at all.
 - **No hardcoded colours.** Every colour reference goes through a token: `bg-primary`, `text-muted-foreground`, `var(--chart-3)`. Zero new hex, zero new OKLCH values.
 - **`--primary` is solid fills only.** Never as a text colour, never as a thin stroke. It is L 0.473 in dark mode and would fail contrast. No token value is adjusted to work around this.
 - **`--radius` is `0.875rem`.** Use the token; no ad-hoc radii except the existing `1.5rem`/`2rem` panel corners.
@@ -1881,145 +1881,413 @@ free. Verified: zero opacity:0 in the server HTML."
 
 ---
 
-### Task 10: The signature moment — billboard docks into the rail
+### Task 10: The signature moment — the labelled system architecture
 
-The one orchestrated moment on the page. Everything else stays quiet.
+Replaces the docking billboard (D5) per D11. The client asked for a 3D brain with AI nodes travelling right to left on scroll; `CLAUDE.md` bans wireframe brains and neural-node fields by name, so the same mechanic is built from something true instead.
+
+This is the page's ONE orchestrated moment. Everything around it stays quiet.
 
 **Files:**
-- Create: `components/motion/dock-billboard.tsx`
-- Modify: `components/sections/billboard.tsx`, `MOTION.md`
+- Create: `content/architecture.ts`, `content/architecture.test.ts`
+- Create: `lib/token-color.ts`, `lib/token-color.test.ts`
+- Create: `components/motion/architecture.tsx` (wrapper), `components/motion/architecture-scene.tsx` (the Canvas)
+- Modify: `components/sections/billboard.tsx`, `package.json`, `MOTION.md`
 
 **Interfaces:**
-- Consumes: `registerScrollTrigger()` from `lib/motion.ts`, `#billboard-frame`, `[data-rail-first-card]`.
-- Produces: `DockBillboard()` — a client component rendering nothing, mounted once inside `Billboard`.
+- Consumes: `Locale`, `CapabilityId`, `registerScrollTrigger()` from `lib/motion.ts`.
+- Produces: `architecture: { nodes: ArchNode[]; edges: ArchEdge[] }`; `resolveToken(token: string): [number, number, number]`; `Architecture({ locale })`.
 
-- [ ] **Step 1: Read lib/motion.ts**
+- [ ] **Step 1: Add the 3D dependencies**
 
-Read `lib/motion.ts` first. `registerScrollTrigger()` already returns `null` under `prefers-reduced-motion: reduce` before importing anything, which is how GSAP stays unfetched. Use it; do not import gsap directly.
+This is the ONE task permitted to change `package.json`. These three are named in `CLAUDE.md`'s stack table, so this is asking permission rather than swapping anything.
 
-- [ ] **Step 2: Create the component**
+```bash
+npm install three @react-three/fiber @react-three/drei
+npm install --save-dev @types/three
+```
 
-Create `components/motion/dock-billboard.tsx`:
+Record the resolved versions in your report. Nothing else may be added.
+
+- [ ] **Step 2: Write the failing architecture-data test**
+
+Create `content/architecture.test.ts`:
+
+```ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { architecture, ARCH_NODE_IDS } from "./architecture.ts";
+
+test("every node id is unique and known", () => {
+  const ids = architecture.nodes.map((n) => n.id);
+  assert.deepEqual([...ids].sort(), [...ARCH_NODE_IDS].sort());
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("every edge connects two real nodes", () => {
+  const ids = new Set(architecture.nodes.map((n) => n.id));
+  for (const edge of architecture.edges) {
+    assert.ok(ids.has(edge.from), `edge from unknown node ${edge.from}`);
+    assert.ok(ids.has(edge.to), `edge to unknown node ${edge.to}`);
+    assert.notEqual(edge.from, edge.to, "no self-edges");
+  }
+});
+
+test("no node is orphaned", () => {
+  const touched = new Set(architecture.edges.flatMap((e) => [e.from, e.to]));
+  for (const node of architecture.nodes) {
+    // The plinth is deliberately unconnected: it is the ground the whole
+    // system stands on, not a step in the flow.
+    if (node.id === "onprem") continue;
+    assert.ok(touched.has(node.id), `${node.id} has no edges`);
+  }
+});
+
+test("every node is labelled in both locales", () => {
+  for (const node of architecture.nodes) {
+    for (const locale of ["en", "id"] as const) {
+      assert.ok(
+        node.label[locale] && node.label[locale].length > 0,
+        `${node.id} missing ${locale} label`,
+      );
+    }
+  }
+});
+
+test("data flows downward — every edge descends", () => {
+  const y = new Map(architecture.nodes.map((n) => [n.id, n.position[1]]));
+  for (const edge of architecture.edges) {
+    assert.ok(
+      y.get(edge.from)! > y.get(edge.to)!,
+      `${edge.from} -> ${edge.to} does not descend; direction is meaning here`,
+    );
+  }
+});
+
+test("the graph is acyclic", () => {
+  const out = new Map<string, string[]>();
+  for (const e of architecture.edges) {
+    out.set(e.from, [...(out.get(e.from) ?? []), e.to]);
+  }
+  const state = new Map<string, 0 | 1 | 2>();
+  function visit(id: string) {
+    if (state.get(id) === 1) assert.fail(`cycle through ${id}`);
+    if (state.get(id) === 2) return;
+    state.set(id, 1);
+    for (const next of out.get(id) ?? []) visit(next);
+    state.set(id, 2);
+  }
+  for (const node of architecture.nodes) visit(node.id);
+});
+```
+
+- [ ] **Step 3: Run it and watch it fail**
+
+Run: `npm test`
+Expected: FAIL — `./architecture.ts` does not exist.
+
+- [ ] **Step 4: Write the architecture data**
+
+Create `content/architecture.ts`. No image imports, no `@/` alias, explicit `.ts` extensions — it is reachable from a test.
+
+```ts
+import type { CapabilityId } from "./capabilities.ts";
+import type { Locale } from "./i18n.ts";
+
+/**
+ * The object in the hero is a labelled composite of the architecture RTECH
+ * actually ships — not an abstraction of "AI".
+ *
+ * CLAUDE.md sets the test this has to pass: "If it degrades into unlabeled dots
+ * and lines, it has become the neural-network cliché — reject it and propose
+ * something else." Labels are the whole difference between a diagram of this
+ * company's work and a stock picture of a brain.
+ *
+ * Every node is real. `erp` and `hris` are systems the client already bought;
+ * `integration`, `agent`, `forecast` and `tablet` are what we build; `onprem` is
+ * the machine it runs on, which is the answer to "where does our data go".
+ */
+export const ARCH_NODE_IDS = [
+  "erp",
+  "hris",
+  "integration",
+  "agent",
+  "forecast",
+  "tablet",
+  "onprem",
+] as const;
+
+export type ArchNodeId = (typeof ARCH_NODE_IDS)[number];
+
+export type ArchNode = {
+  id: ArchNodeId;
+  label: Record<Locale, string>;
+  /** Scene units: x right, y up, z toward the viewer. */
+  position: [number, number, number];
+  /** Which capability this node stands for, or null if we did not build it. */
+  capability: CapabilityId | null;
+};
+
+export type ArchEdge = { from: ArchNodeId; to: ArchNodeId };
+
+const nodes: ArchNode[] = [
+  {
+    id: "erp",
+    label: { en: "ERP", id: "ERP" },
+    position: [-1.6, 2.2, 0],
+    capability: null,
+  },
+  {
+    id: "hris",
+    label: { en: "HRIS", id: "HRIS" },
+    position: [1.6, 2.2, -0.4],
+    capability: null,
+  },
+  {
+    id: "integration",
+    label: { en: "Integration layer", id: "Lapisan integrasi" },
+    position: [0, 0.9, 0],
+    capability: "erp",
+  },
+  {
+    id: "agent",
+    label: { en: "AI agent", id: "Agen AI" },
+    position: [-1.5, -0.3, 0.3],
+    capability: "ai-agents",
+  },
+  {
+    id: "forecast",
+    label: { en: "Forecasting", id: "Prediksi" },
+    position: [1.5, -0.3, -0.3],
+    capability: "ai-apps",
+  },
+  {
+    id: "tablet",
+    label: { en: "Field tablet", id: "Tablet lapangan" },
+    position: [0, -1.6, 0.2],
+    capability: "web-apps",
+  },
+  {
+    // The plinth. Deliberately has no edges: it is not a step in the flow, it
+    // is the ground the whole thing stands on. That is the argument — the model
+    // runs on a box in your building.
+    id: "onprem",
+    label: { en: "On-premise server", id: "Server on-premise" },
+    position: [0, -2.6, 0],
+    capability: "hardware",
+  },
+];
+
+const edges: ArchEdge[] = [
+  { from: "erp", to: "integration" },
+  { from: "hris", to: "integration" },
+  { from: "integration", to: "agent" },
+  { from: "integration", to: "forecast" },
+  { from: "agent", to: "tablet" },
+  { from: "forecast", to: "tablet" },
+];
+
+export const architecture = { nodes, edges };
+```
+
+- [ ] **Step 5: Run the tests**
+
+Run: `npm test`
+Expected: PASS, six new tests.
+
+- [ ] **Step 6: Write the failing token-colour test**
+
+Three.js cannot parse OKLCH, and every colour in this project is an OKLCH custom property. The resolver round-trips through a one-pixel canvas, which normalises whatever the browser reports to sRGB.
+
+This is the technique the deleted `lib/token-color.ts` used. It was correctly deleted in Task 2 (nothing imported it); it comes back now because something does — this time with a test.
+
+Create `lib/token-color.test.ts`:
+
+```ts
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import { parseRgbString } from "./token-color.ts";
+
+test("parses an rgb() string", () => {
+  assert.deepEqual(parseRgbString("rgb(255, 128, 0)"), [255, 128, 0]);
+});
+
+test("parses rgba() and ignores alpha", () => {
+  assert.deepEqual(parseRgbString("rgba(10, 20, 30, 0.5)"), [10, 20, 30]);
+});
+
+test("parses the space-separated modern form", () => {
+  assert.deepEqual(parseRgbString("rgb(1 2 3 / 40%)"), [1, 2, 3]);
+});
+
+test("returns null for anything it cannot parse", () => {
+  for (const input of ["", "oklch(0.5 0.1 200)", "not a colour", "#fff"]) {
+    assert.equal(parseRgbString(input), null, input);
+  }
+});
+```
+
+Splitting the pure string parsing out of the DOM work is what makes this testable at all under `node --test`, which has no `document`.
+
+- [ ] **Step 7: Run it and watch it fail, then implement**
+
+Run: `npm test` — expected FAIL.
+
+Create `lib/token-color.ts`:
+
+```ts
+/**
+ * Resolves a CSS custom property to an `[r, g, b]` triple a WebGL material can
+ * use.
+ *
+ * Three.js cannot parse `oklch(...)`, and every colour in this project is an
+ * OKLCH custom property. Painting one pixel with whatever `getComputedStyle`
+ * reports and reading it back normalises every colour space the browser might
+ * hand us — `oklch()`, `color(srgb ...)`, `rgb()` — down to sRGB, without
+ * pulling in a colour-space library.
+ *
+ * `parseRgbString` is separated from the DOM work so it can be tested under
+ * `node --test`, which has no `document`.
+ */
+export function parseRgbString(value: string): [number, number, number] | null {
+  const match = value.match(
+    /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i,
+  );
+  if (!match) return null;
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+/** Browser only. Returns white if the token cannot be resolved. */
+export function resolveToken(token: string): [number, number, number] {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  probe.style.position = "absolute";
+  probe.style.opacity = "0";
+  document.body.appendChild(probe);
+  const computed = getComputedStyle(probe).color;
+  probe.remove();
+
+  const direct = parseRgbString(computed);
+  if (direct) return direct;
+
+  const scratch = document.createElement("canvas");
+  scratch.width = 1;
+  scratch.height = 1;
+  const ctx = scratch.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return [255, 255, 255];
+  ctx.fillStyle = computed;
+  ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return [r, g, b];
+}
+```
+
+Run: `npm test` — expected PASS.
+
+- [ ] **Step 8: Build the scene**
+
+Create `components/motion/architecture-scene.tsx`, a client component containing the `<Canvas>`.
+
+Requirements, all of which are graded:
+
+- **Colour comes only from tokens**, resolved with `resolveToken` on mount and re-resolved if the theme class on `<html>` changes:
+
+  | Element | Token |
+  |---|---|
+  | Node wireframes | `--foreground` |
+  | Edges | `--border` |
+  | Pulses travelling the edges | `--chart-2` |
+  | Plinth | `--card` |
+
+  **No `--primary` anywhere in the scene.** Orange belongs to the CTA and nothing else.
+
+- Nodes render as small wireframe octahedra at their `position`. The `onprem` node renders instead as a wide flat plinth beneath everything — it is the ground, not a step.
+- Edges render as lines between connected nodes.
+- A pulse travels each edge from `from` to `to` on a loop, offset per edge so they do not fire in unison.
+- Labels: use `drei`'s `<Text>`. They are decorative — the canvas is `aria-hidden` and the real description is server-rendered text (Step 9).
+- `dpr={[1, 1.5]}`.
+- `frameloop` is a prop driven by visibility: `"always"` while the hero intersects the viewport, `"never"` when it does not. Wire it with an `IntersectionObserver`. A scene rendering off-screen is wasted battery.
+- `gl={{ antialias: true, powerPreference: "high-performance" }}`, and set `flat` / no tone mapping so token colours render as authored rather than being tone-mapped into something else.
+
+- [ ] **Step 9: Build the wrapper and mount it**
+
+Create `components/motion/architecture.tsx`, a client component that owns every guard:
 
 ```tsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import { Suspense, useEffect, useState } from "react";
 
-import { registerScrollTrigger } from "@/lib/motion";
+import type { Locale } from "@/content/i18n";
 
-/** Below this width the pin is skipped entirely. */
+const Scene = dynamic(
+  () => import("./architecture-scene").then((m) => m.ArchitectureScene),
+  { ssr: false },
+);
+
+/** Below this width no WebGL loads at all. */
 const MIN_WIDTH = 768;
 
 /**
- * The signature moment: the billboard shrinks and docks into the first card of
- * the work rail as you scroll off the hero.
+ * Every guard CLAUDE.md requires, in one place.
  *
- * Only `transform` and `opacity` animate, so nothing here can shift layout or
- * cost CLS. The frame is `position: absolute` inside a pinned header, and the
- * target is measured from the real rail card, so the two always agree even
- * after a font swap or a resize.
- *
- * Three ways this does not run: reduced motion (registerScrollTrigger returns
- * null before importing gsap), viewports under 768px (pinning fights native
- * scroll on mobile and is the biggest risk to the mobile budget), and a missing
- * target element.
+ * The scene is never fetched at all on a phone or under reduced motion — the
+ * gate is a state check before the dynamic import resolves, not CSS hiding a
+ * canvas that already downloaded three.js. That is also what protects the
+ * mobile Lighthouse budget: the phone never pays for this.
  */
-export function DockBillboard() {
-  const ctxRef = useRef<{ revert: () => void } | null>(null);
+export function Architecture({ locale }: { locale: Locale }) {
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const wide = window.matchMedia(`(min-width: ${MIN_WIDTH}px)`);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    async function run() {
-      if (window.innerWidth < MIN_WIDTH) return;
+    const update = () => setEnabled(wide.matches && !still.matches);
+    update();
 
-      const mod = await registerScrollTrigger();
-      if (!mod || cancelled) return;
-      const { gsap, ScrollTrigger } = mod;
-
-      const frame = document.getElementById("billboard-frame");
-      const header = frame?.closest("header");
-      const card = document.querySelector<HTMLElement>("[data-rail-first-card]");
-      if (!frame || !header || !card) return;
-
-      const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: header,
-            start: "top top",
-            end: "+=100%",
-            scrub: 0.8,
-            pin: true,
-            pinSpacing: true,
-            invalidateOnRefresh: true,
-          },
-        });
-
-        tl.to(frame, {
-          // Measured at refresh time, not at build time, so a resize or a
-          // font swap re-derives the target instead of animating to a stale
-          // rectangle.
-          scale: () => card.offsetWidth / frame.offsetWidth,
-          x: () => {
-            const f = frame.getBoundingClientRect();
-            const c = card.getBoundingClientRect();
-            return c.left + c.width / 2 - (f.left + f.width / 2);
-          },
-          y: () => window.innerHeight * 0.34,
-          borderRadius: "0.875rem",
-          ease: "none",
-        }).to(
-          header.querySelector("[data-billboard-copy]"),
-          { opacity: 0, y: -24, ease: "none" },
-          "<",
-        );
-      }, header);
-
-      ctxRef.current = ctx;
-
-      const onResize = () => ScrollTrigger.refresh();
-      window.addEventListener("resize", onResize);
-      ctxRef.current = {
-        revert: () => {
-          window.removeEventListener("resize", onResize);
-          ctx.revert();
-        },
-      };
-    }
-
-    void run();
-
+    wide.addEventListener("change", update);
+    still.addEventListener("change", update);
     return () => {
-      cancelled = true;
-      ctxRef.current?.revert();
-      ctxRef.current = null;
+      wide.removeEventListener("change", update);
+      still.removeEventListener("change", update);
     };
   }, []);
 
-  return null;
+  if (!enabled) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <Scene locale={locale} />
+    </Suspense>
+  );
 }
 ```
 
-If `registerScrollTrigger()`'s current return shape differs from `{ gsap, ScrollTrigger }`, match whatever it actually returns rather than changing it — other triggers depend on it.
+Mount it in `components/sections/billboard.tsx`:
 
-- [ ] **Step 3: Mount it and mark the copy block**
+- Positioned on the **right**, oversized, bleeding past the frame, behind the scrim and behind the title block. It must never sit above the copy.
+- `aria-hidden="true"` on its container.
+- The existing billboard poster stays and remains the `priority` LCP image. The `Suspense` fallback is `null` because the poster is already behind the canvas — there is nothing to hold space for and nothing can shift.
+- Add a server-rendered `sr-only` paragraph describing what the object depicts, in both locales. The canvas is decorative, so what it communicates must exist as crawlable text. Add `hero.architectureDescription` to `content/copy.text.ts`:
+  - EN: `A diagram of a system we build: an ERP and an HRIS feeding an integration layer, which drives an AI agent and a forecasting model, both reporting to a field tablet. The whole system stands on a server inside the client's own building.`
+  - ID: `Diagram sistem yang kami bangun: ERP dan HRIS mengalir ke lapisan integrasi, yang menjalankan agen AI dan model prediksi, keduanya melapor ke tablet lapangan. Seluruh sistem berjalan di server milik klien sendiri.`
 
-In `components/sections/billboard.tsx`:
+- [ ] **Step 10: Add the scroll travel**
 
-- add `data-billboard-copy=""` to the `<div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-28 ...">` that holds the eyebrow, headline, subline and CTAs
-- add `<DockBillboard />` as the last child of the `<header>`
-- import it with `dynamic` so it never enters the initial bundle:
+The object starts on the right and travels **right to left**, receding as it goes, so it is gone before the first rail.
 
-```tsx
-import dynamic from "next/dynamic";
-const DockBillboard = dynamic(
-  () => import("@/components/motion/dock-billboard").then((m) => m.DockBillboard),
-  { ssr: false },
-);
-```
+- GSAP `ScrollTrigger`, **scrubbed at `0.9`, NOT pinned.** Pinning was the expensive and fragile part of the superseded docking billboard; a non-pinned scrub costs a fraction and cannot strand the layout.
+- Trigger on the billboard `<header>`, `start: "top top"`, `end: "bottom top"`.
+- Animate the canvas container's `x` (to roughly `-40vw`), `scale` (to ~`0.75`) and `opacity` (to `0`). Transform and opacity only — nothing here may touch layout.
+- Created inside `gsap.context()`, reverted on unmount, `ScrollTrigger.refresh()` on resize.
+- Reuse `registerScrollTrigger()` from `lib/motion.ts` so GSAP is still never fetched under reduced motion.
 
-- [ ] **Step 4: Verify the budget before keeping it**
+Also remove the now-dead `data-rail-first-card` attribute from `components/sections/work-rail.tsx` and its pass-through in the work rail — its only consumer was the docking billboard, which no longer exists. Leave `RailCard`'s generic `data-*` support in place; that is a general capability, not dead code.
+
+- [ ] **Step 11: Measure before you keep it**
 
 This is the step that decides whether the feature ships.
 
@@ -2027,34 +2295,49 @@ This is the step that decides whether the feature ships.
 npm run build && npm start
 ```
 
-Then run Lighthouse mobile, throttled, against `http://localhost:3000/en`. Record LCP, CLS, INP and the performance score.
+Run Lighthouse against `http://localhost:3000/en`, **mobile preset, throttled**, three runs, take the median. Record Performance, LCP, CLS, INP and total transfer size.
 
-- If **Performance ≥ 90 and CLS < 0.1**, keep it.
-- If not, **cut the dock, not the budget.** `CLAUDE.md` is explicit. Delete `dock-billboard.tsx`, remove the mount, and report the measured numbers.
+Because the scene never loads below 768px, mobile numbers should be unchanged from Phase 1. **If they are not, something is loading that should not be — find it before continuing.**
 
-Also verify by hand: at 767px wide there is no pin; under `prefers-reduced-motion: reduce` there is no pin and no gsap chunk in the Network panel; scrolling back up reverses cleanly; resizing mid-scroll does not leave the frame stranded.
+Then run desktop and confirm LCP is still the billboard poster and not the canvas.
 
-- [ ] **Step 5: Add the MOTION.md row**
+- If mobile Performance is **≥ 90 and CLS < 0.1**, keep it.
+- If not, **cut the scene, not the budget** — `CLAUDE.md` is explicit. Report the measured numbers.
+
+Also verify by hand:
+- At 767px wide: no canvas, and **no three.js chunk in the Network panel at all**.
+- Under `prefers-reduced-motion: reduce`: same — no canvas, no GSAP chunk.
+- Scrolling back up reverses cleanly; resizing mid-scroll does not strand the object.
+- The object never overlaps the headline or the CTAs legibly.
+
+- [ ] **Step 12: Record the trigger and commit**
+
+Add to `MOTION.md`:
 
 ```
-| 7 | Billboard docks into rail | `dock-billboard.tsx` | `top top` | `+=100%` | **0.8** | no | `scale`, `x`, `y`, `opacity`; pinned; skipped under 768px and under reduce |
+| 7 | Architecture object travel | `architecture.tsx` | `top top` | `bottom top` | **0.9** | no | `x`, `scale`, `opacity`; not pinned; no WebGL below 768px or under reduce |
 ```
 
-Add a paragraph under the table stating the measured Lighthouse numbers from Step 4, so the next person can audit the page against the budget without re-measuring.
-
-- [ ] **Step 6: Commit**
+Add a note under the table stating the measured mobile Lighthouse numbers from Step 11, and that the scene is not loaded on mobile at all.
 
 ```bash
 git add -A
-git commit -m "feat: dock the billboard into the work rail on scroll
+git commit -m "feat: the labelled system architecture, travelling right to left
 
-The page's one orchestrated moment. The billboard frame animates to
-the measured bounds of the first rail card across a pinned scrub, then
-the real rail takes over.
+The page's one orchestrated moment. Every node is a real named part of
+a system we ship: an ERP and an HRIS feed an integration layer, which
+drives an agent and a forecasting model, both reporting to a field
+tablet. The whole thing stands on an on-premise server, which is the
+answer to where the client's data lives.
 
-Transform and opacity only, so CLS stays at zero. Skipped entirely
-below 768px and under prefers-reduced-motion. Measured numbers are in
-MOTION.md."
+Not a brain and not a neural field: CLAUDE.md bans both, and its own
+test is that an object which degrades into unlabelled dots and lines
+has become the cliche. Labels are what make this a diagram of our work
+rather than a stock picture of AI.
+
+Scrubbed, not pinned. No WebGL below 768px and none under reduced
+motion, so a phone never downloads three.js and the mobile budget is
+untouched. No --primary in the scene; orange stays with the CTA."
 ```
 
 **PAUSE FOR REVIEW.** Phase 2 is CLAUDE.md stage 3 complete.
