@@ -24,7 +24,9 @@ export function IndustriesRail({ locale }: { locale: Locale }) {
       {t.expertise.sectors.map((sector) => (
         <li
           key={sector.id}
-          className={`flex shrink-0 snap-start flex-col rounded-2xl border border-border bg-card p-6 ${RAIL_CARD_WIDTH}`}
+          // z-30: same reasoning as CapabilitiesRail's cards — see the note
+          // there and in components/ui/card.tsx.
+          className={`relative z-30 flex shrink-0 snap-start flex-col rounded-2xl border border-border bg-card p-6 ${RAIL_CARD_WIDTH}`}
         >
           <div className="flex items-start justify-between gap-4">
             <h3 className="font-heading text-lg font-semibold tracking-[-0.01em]">

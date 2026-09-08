@@ -31,8 +31,9 @@ page against the performance budget.
   object is the one exception to "no canvas" in this file, and CLAUDE.md's "one
   orchestrated 3D moment" rule is under some tension with it now that it is a
   fixed layer present through every section rather than a single hero beat —
-  see trigger 7 for the mitigations (reduced opacity, nothing else on the page
-  gains motion) and why the client asked for it anyway.
+  see trigger 7 for the mitigations (nothing else on the page gains motion)
+  and why the client asked for it anyway. Task 10c (below) replaced the
+  opacity-based mitigation with a DOM z-index one.
 
 ## Triggers
 
@@ -95,8 +96,107 @@ value tied to scroll distance the way trigger 4's rail is. Mechanism:
   (both tier 3, both pushed toward the same side), and so did `tablet`'s and
   `command`'s (both tier 4). Screenshot-verified fix, not a shortened label.
 
+### Task 10c (2026-09-08) — foreground layer, teal palette, 21 nodes, team block gone
+
+Client feedback after seeing Task 10b live: "the nodes and brain is not
+clearly show, it should in front of and fixed also remove the who you'll
+work with is, and make it more AI nodes here the color also looks bad." Four
+changes, all in trigger 7's own files plus the team removal below.
+
+**Z-layering — the object moves to the foreground.** The fixed layer's
+wrapper in `app/[locale]/page.tsx` moved from `-z-10` (behind everything) to
+`z-20` (in front of any normal-flow content that carries no z-index of its
+own), still well clear of `SiteNav`'s `fixed z-50`. `z-21..49` is left empty
+on purpose — headroom for the chat dock a later task adds.
+
+Raising the canvas alone would have buried every word on the page behind it,
+so the other half of the change is an explicit `z-30` on every text-bearing
+surface: `Billboard`'s copy block, `SectionHeader`, `DarkPanel`'s content
+wrapper (its own background box stays unelevated, so the object still paints
+over the panel), `Card`, and the three rail-card shapes
+(`components/sections/capabilities-rail.tsx`, `components/rail/rail-card.tsx`,
+`components/sections/industries-rail.tsx`), plus each rail's title row and
+`Process`'s rail-marker row. `Section`'s own wrapper is deliberately **not**
+elevated — doing that would carry every card inside a section up as one
+block and hide the object behind it again, the opposite of the point.
+
+This works cleanly because the canvas draws almost nothing: `frameloop`
+notwithstanding, the WebGL clear alpha is 0 everywhere the diagram itself
+isn't, so a positive z-index only ever affects the pixels of an actual node,
+edge, pulse, or label plate — not a wash over the whole viewport. A soft
+opacity mask over the copy column (the brief's alternative mechanism) was
+not needed once the real text was given real DOM stacking.
+
+**Opacity.** `BASE_OPACITY`/`HERO_OPACITY` (16-30%) are gone, replaced by one
+`OBJECT_OPACITY = 0.92`. The old split existed because the layer sat behind
+body copy and needed a low ceiling to stay out of the way; Task 10c's
+z-elevation makes that unnecessary — legibility is now a stacking fact, not
+an opacity negotiation — so the object can run at near-full strength
+everywhere it's on screen. Contact's fade-to-0 (`data-object-x="0"`) is
+unchanged: the CTA is still the moment there.
+
+**Colour — full teal instrument palette**, replacing the near-white/grey
+scheme:
+
+| Element | Was | Now |
+|---|---|---|
+| Node geometry | `--foreground` | `--chart-1` |
+| Edges / plinth edging | `--border` | `--chart-3` |
+| Travelling pulses | `--chart-2` | `--chart-1` |
+| Labels | `--foreground` | `--foreground` (unchanged) |
+| Plinth fill / label plates | `--card` | `--card` (unchanged) |
+
+`--chart-1` (L 0.855, the brightest step of the ramp) is deliberate here —
+the client's complaint was literally that the object did not read clearly,
+and CLAUDE.md flags this same token as too light for *thin lines or small
+text on the white light-mode background*. That warning is about contrast
+against `oklch(1 0 0)`; this scene sits on the page's own dark surface (the
+billboard's dimmed poster, `DarkPanel`, or the plain dark `--background`
+behind a rail), so the comparison that actually matters is chart-1 against
+near-black, not chart-1 against white — and that contrast is high regardless
+of whether the geometry is filled or wireframe (the node octahedrons are
+wireframe; only the pulses are solid). Screenshot-verified: the wireframe
+reads clearly in both the hero and the rails. No `--primary` anywhere in the
+scene, unchanged.
+
+**21 nodes, all real.** Grown from 14 to 21 — the seven additions are project
+names already on this page, pulled from `expertise.sectors`, nothing
+invented: `hse-inspection`, `piping`, `warehouse`, `cargo`, `checklist`,
+`maintenance`, `sales`. All 21 keep a legible label; none were dropped. See
+`content/architecture.ts` for the full node/edge table and the note on why
+tier 4 is zigzagged across two y values (-0.3 / -0.9) rather than the
+brief's single flat -0.6 — the brief's own suggested spacing did not clear
+once these seven labels (up to 23 characters) were laid out at that density.
+
+Getting there needed one more mechanism: `wrapLabel` in
+`architecture-scene.tsx` breaks any label over 15 characters onto a second
+line, greedily, on a word boundary. Deterministic and precomputed rather than
+left to drei's own text reflow, for the same reason the file already
+computed single-line width by counting monospaced characters. This roughly
+halves the on-screen footprint of the longest labels (23 chars → an 11-13
+char widest line) and is applied to every label in the scene, not just the
+new ones — the pre-existing "Document reading" / "Integration layer" also
+wrap now, with no separate opt-in.
+
+Camera widened again to fit the wider tier: `fov: 44 → 47`,
+`camera.position.z: 11 → 11.6`, to give the new spread margin inside the
+frustum. See the task report for the screenshot verification.
+
+**Team block removed.** The client asked for "who you'll work with" to go.
+`components/sections/about.tsx` no longer renders the team block; `team` and
+`TeamMember` are gone from `content/copy.text.ts`; the `Person` JSON-LD (one
+per founder) and the `founder` field referencing it are gone from
+`components/seo/structured-data.tsx`. CLAUDE.md asks for a `Person` node per
+team member — this is a deliberate, client-directed removal of the content
+that schema described, not an oversight, and it ships in the same change
+that removes the content, so structured data never points at people who are
+no longer on the page.
+
 **Measured** (`npm run build && npm start`, Lighthouse, throttled, median of
-three, `http://localhost:3000/en`, 2026-09-08):
+three, `http://localhost:3000/en`, 2026-09-08). Pre-Task-10c numbers, kept
+rather than re-run in the same pass — 21 nodes and a foreground z-index are
+both more expensive to draw and composite than 14 nodes at `-z-10`, so these
+figures should be treated as a floor, not a current reading:
 
 | | Mobile | Desktop |
 |---|---|---|

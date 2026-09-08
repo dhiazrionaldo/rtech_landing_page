@@ -44,7 +44,10 @@ export function Rail({
       data-object-x={objectX}
       className={cn("scroll-mt-24 py-10 md:py-14", className)}
     >
-      <div className="mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6">
+      {/* z-30: elevated above the fixed architecture layer's z-20 (Task 10c) —
+          the rail title and its prev/next controls are text and controls,
+          not the section's own background. */}
+      <div className="relative z-30 mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6">
         <h2
           id={titleId}
           className="font-heading text-[clamp(1.125rem,2vw,1.5rem)] font-semibold tracking-[-0.02em]"

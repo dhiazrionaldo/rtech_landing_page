@@ -24,37 +24,42 @@ import billboardPoster from "@/public/image/capture-optigain.webp";
  * section's vote in that choreography: right, same side the object used to
  * occupy when it lived inside this frame.
  *
- * That move meant `isolate` had to come off this header. It existed to keep
- * `#billboard-frame`'s `-z-10` from leaking into the rest of the page — the
- * right job when the architecture object was a child of this frame and needed
- * to paint above the poster but nothing outside the header needed to see
- * through it. Isolating this header now would also seal off the page-level
- * fixed layer, which sits behind everything at `-z-10`: an isolated header
- * paints as one atomic unit at `z-index: auto`, on top of any negative-z
- * sibling regardless of the sibling's own number, so the object would be
- * invisible for the entire hero. Without `isolate`, `#billboard-frame`'s
- * `-z-20` and the page layer's `-z-10` resolve in the same, outer stacking
- * context: the frame (more negative) paints first, the fixed layer paints
- * above it, and this section's own text — never positioned, so it paints
- * above any negative z-index regardless — stays on top of both.
+ * That move meant `isolate` had to come off this header, and it still has to
+ * stay off after Task 10c. `isolate` existed to keep `#billboard-frame`'s
+ * negative z-index from leaking into the rest of the page — the right job
+ * when the object was a child of this frame. Isolating this header now would
+ * seal it into one atomic stacking unit, and that unit would be compared
+ * against the object and the nav using nothing but the header's own
+ * (non-existent) z-index — silently losing to `SiteNav`'s `z-50` in ways
+ * unrelated to what is inside it, or winning against the object regardless of
+ * the object's z, whichever way `auto` happens to resolve. Leaving it off
+ * keeps every descendant's own z-index meaningful in the shared, page-root
+ * stacking context.
  *
- * CONSTRAINT for whoever edits this header next: nothing inside it may set a
- * `z-index`, or anything else that establishes a stacking context of its own
- * (`opacity` below 1, a `transform`, a `filter`, `isolation: isolate`,
- * `will-change` naming one of those, `contain: layout`/`paint`). Today
- * nothing here does — `<header>` is `relative` with no `z-index`, and every
- * descendant is either unpositioned text or `#billboard-frame` at its
- * explicit `-z-20` — which is why the ordering above holds, but it is a fact
- * about the current markup, not something enforced. The moment one
- * descendant creates a stacking context (a sticky badge, a hover overlay,
- * anything with its own `z-index`), that element and everything inside it
- * escapes the comparison above entirely and gets compared against the page's
- * OTHER positioned elements (the fixed layer at `-z-10`, `SiteNav` at
- * `z-50`) using its own number, silently landing in front of or behind the
- * wrong thing with no error and no visual cue until someone notices. If a
- * future change genuinely needs a stacking context in here, re-introduce
- * `isolate` deliberately and re-verify by screenshot that the architecture
- * object is still visible through the hero — don't assume the current
+ * ## Z-layering (Task 10c)
+ *
+ * The architecture layer moved from `-z-10` (behind everything) to `z-20`
+ * (in front of everything without its own z-index) — see the note in
+ * `app/[locale]/page.tsx`. `#billboard-frame` stays at its explicit `-z-20`:
+ * still behind the object either way, negative or not.
+ *
+ * The hero copy below (`mx-auto w-full max-w-[1400px] ...`) now carries an
+ * explicit `relative z-30` for the same reason every other section's text
+ * does: without it, the headline, subline, buttons and stat row have no
+ * z-index of their own and would lose to the object's `z-20`. `z-30` sits
+ * below `SiteNav`'s `z-50` with room to spare.
+ *
+ * CONSTRAINT for whoever edits this header next: nothing inside it may set
+ * `isolation: isolate`, or anything else that would seal a descendant off
+ * from this shared stacking context and make its z-index stop meaning what
+ * it says (a `contain: layout`/`paint` on an ancestor of the copy block would
+ * do the same thing `isolate` would, for the same reason). Today the only two
+ * positioned things in here are `#billboard-frame` at `-z-20` and the copy
+ * block at `z-30`, and nothing between the header and the page root
+ * intercepts either. If a future change adds a third positioned descendant,
+ * give it a z-index that is deliberate against this scale (`z-20` object /
+ * `z-30` text / `z-50` nav) and re-verify by screenshot that the object is
+ * still visible and the headline still crisp — don't assume the current
  * ordering still holds.
  */
 export function Billboard({ locale }: { locale: Locale }) {
@@ -93,7 +98,7 @@ export function Billboard({ locale }: { locale: Locale }) {
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/85 to-transparent" />
       </div>
 
-      <div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-28 md:px-6 md:pb-14">
+      <div className="relative z-30 mx-auto w-full max-w-[1400px] px-3 pb-10 pt-28 md:px-6 md:pb-14">
         <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
           {t.hero.eyebrow}
         </p>

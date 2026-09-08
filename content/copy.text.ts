@@ -156,8 +156,6 @@ type Dict = {
     badge: string;
     heading: string;
     body: string;
-    /** Label above the team roster folded into this section. */
-    teamLabel: string;
     missionLabel: string;
     mission: string;
     /**
@@ -218,9 +216,6 @@ type Dict = {
     playLabel: string;
     /** Introduces the client on the banner across the top of a product's frame. */
     clientLabel: string;
-  };
-  team: {
-    members: TeamMember[];
   };
   contact: {
     badge: string;
@@ -410,71 +405,12 @@ const phasesEn: Phase[] = [
 ];
 
 /**
- * The people on the team.
- *
- * `role` and `bio` are locale-specific, so the roster follows the same shape as
- * `phases` above: one array per language, referenced from each dictionary.
- * `name` is a proper noun and identical in both.
- *
- * ## On photographs
- *
- * `photo` is optional and currently unset for both members, which renders them
- * as initials.
- *
- * It is unset on purpose. The request was to source a stock photograph of a
- * woman for the CEO and a man for the CTO. Attaching a stranger's face to a
- * named, real person is not a placeholder that gets corrected later — it is a
- * false claim about who these people are, published under their own names, and
- * one of them cannot consent to it through the other. It also sits on a page
- * whose entire argument is that nothing here is inflated.
- *
- * Drop real files into `public/image/team/` and set `photo` on each member. The
- * component already handles both states; nothing else has to change.
+ * `TeamMember`, `teamId`, and `teamEn` — the two-founder roster this page used
+ * to render as "who you'll work with" in About — were removed in Task 10c at
+ * the client's request. See `components/sections/about.tsx` for the note on
+ * why, and `components/seo/structured-data.tsx` for the matching removal of
+ * the `Person` JSON-LD and the `founder` reference that pointed at it.
  */
-export type TeamMember = {
-  id: string;
-  /** Proper noun. Identical across locales. */
-  name: string;
-  role: string;
-  /** One line of standing. Kept short: this is a card, not a CV. */
-  bio: string;
-  /** Path under `public/`, e.g. `/image/team/dhiaz.webp`. Real photographs only. */
-  photo?: string;
-};
-
-/**
- * Founder first, co-founder second, which is the order the two titles imply.
- * Swapping them is a one-line change in both arrays.
- */
-const teamId: TeamMember[] = [
-  {
-    id: "dhiaz",
-    name: "Dhiaz Rionaldo",
-    role: "Founder & CTO",
-    bio: "Sepuluh tahun lebih di industri IT. Sekarang fokus membangun sistem AI agentic.",
-  },
-  {
-    id: "ariela",
-    name: "Ariela Oktafira",
-    role: "Co-founder & CEO",
-    bio: "Sepuluh tahun lebih sebagai konsultan manajemen bisnis.",
-  },
-];
-
-const teamEn: TeamMember[] = [
-  {
-    id: "dhiaz",
-    name: "Dhiaz Rionaldo",
-    role: "Founder & CTO",
-    bio: "Over ten years in the IT industry. Now building agentic AI systems.",
-  },
-  {
-    id: "ariela",
-    name: "Ariela Oktafira",
-    role: "Co-founder & CEO",
-    bio: "Over ten years in business management consulting.",
-  },
-];
 
 export const copy: Record<Locale, Dict> = {
   id: {
@@ -536,7 +472,6 @@ export const copy: Record<Locale, Dict> = {
       badge: "Tentang kami",
       heading: "Kami baru selesai kalau sistemnya benar-benar dipakai.",
       body: "Sejak 2018: digitalisasi HSSE, integrasi ERP, command center, hingga Agentic AI yang membantu bisnis dan operasional klien kami.",
-      teamLabel: "Yang akan menangani proyek Anda",
       missionLabel: "Misi",
       // Verbatim from the deck.
       mission:
@@ -643,9 +578,6 @@ export const copy: Record<Locale, Dict> = {
       playLabel: "Putar",
       clientLabel: "Klien",
     },
-    team: {
-      members: teamId,
-    },
     contact: {
       badge: "Hubungi kami",
       heading: "Mulai dari proses yang paling penting.",
@@ -714,7 +646,6 @@ export const copy: Record<Locale, Dict> = {
       badge: "About us",
       heading: "We are not finished until the system is in use.",
       body: "Since 2018: HSSE digitalisation, ERP integration, command centres, and Agentic AI that already solved our clients' problems.",
-      teamLabel: "Who you'll work with",
       missionLabel: "Mission",
       mission:
         "To deliver adaptive, integrated technology solutions with real operational impact for our clients, through continuous innovation.",
@@ -813,9 +744,6 @@ export const copy: Record<Locale, Dict> = {
       captureKinds: { film: "Product film", capture: "Screen recording" },
       playLabel: "Play",
       clientLabel: "Client",
-    },
-    team: {
-      members: teamEn,
     },
     contact: {
       badge: "Contact",

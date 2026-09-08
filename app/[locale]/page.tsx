@@ -19,12 +19,37 @@ import { isLocale } from "@/content/i18n";
  * ten project names — is in the initial HTML for crawlers and for LCP.
  *
  * `Architecture` mounts once here, before `<SiteNav>`, as a fixed full-viewport
- * layer rather than inside any one section (Task 10b). It sits behind every
- * section at `-z-10` and eases left or right as each section declares its pose
- * with `data-object-x` — see `Section`, `Rail`, and the `data-object-x` on
- * `Billboard`'s own `<header>`. The wrapper is `aria-hidden`, so its sr-only
- * description is a sibling rather than a child: nested inside, it would be
- * hidden from assistive tech along with the canvas.
+ * layer rather than inside any one section (Task 10b), and eases left or right
+ * as each section declares its pose with `data-object-x` — see `Section`,
+ * `Rail`, and the `data-object-x` on `Billboard`'s own `<header>`. The wrapper
+ * is `aria-hidden`, so its sr-only description is a sibling rather than a
+ * child: nested inside, it would be hidden from assistive tech along with the
+ * canvas.
+ *
+ * ## Z-layering (Task 10c)
+ *
+ * The client saw this object twice at `-z-10` (behind everything) and called
+ * it "not clearly shown". Task 10c moves it to `z-20`: positive, so it paints
+ * above any normal-flow content (the billboard poster, `DarkPanel`, every
+ * card) that does not carry its own z-index, but well clear of `SiteNav`'s
+ * `fixed z-50`, which must always win. `z-21..49` is deliberately left empty —
+ * headroom for the chat dock a later task adds, which also needs to sit above
+ * this layer and below the nav.
+ *
+ * Raising the canvas would bury every word on the page behind it if nothing
+ * else changed — normal-flow text has no z-index of its own, so it would lose
+ * to any positioned element with one. The other half of this change is
+ * therefore everywhere text now carries an explicit `z-30`: this hero's own
+ * copy block in `Billboard`, `SectionHeader`, `DarkPanel`'s content wrapper
+ * (its background stays unelevated, so the object still paints over the
+ * panel itself), every card (`Card`, the three rail card shapes), and each
+ * rail's title row. Backgrounds and imagery (`#billboard-frame`, `DarkPanel`'s
+ * own surface, a card's own fill) are deliberately left unelevated — that is
+ * what lets the object paint in front of them rather than being hidden behind
+ * an opaque box. See the Task 10c report for the full list of touch points
+ * and why a DOM z-index split does this more reliably here than a mask would:
+ * the canvas is transparent everywhere it draws nothing, so the only pixels
+ * this ever affects are the wireframe, the plates, and the pulses.
  */
 export default async function Page({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
@@ -36,7 +61,7 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
     <>
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-10"
+        className="pointer-events-none fixed inset-0 z-20"
       >
         <Architecture locale={locale} />
       </div>

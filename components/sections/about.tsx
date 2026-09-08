@@ -16,6 +16,18 @@ import type { Locale } from "@/content/i18n";
  * Every client is also named in text next to its mark. A logo is an image; the
  * proof has to survive an image that fails to load, a screen reader, and a
  * crawler, so the name is never carried by the picture alone.
+ *
+ * ## Team block removed (Task 10c)
+ *
+ * The client asked for "who you'll work with" to go. The label, the member
+ * list, and the (always-empty) photo slot are gone from this section; `team`
+ * and `TeamMember` are gone from `content/copy.text.ts` entirely, and the
+ * `Person` JSON-LD that named the two founders is gone from
+ * `components/seo/structured-data.tsx`, along with the `founder` reference
+ * that pointed at it. CLAUDE.md asks for a `Person` node per team member —
+ * this is a deliberate, client-directed removal of the content that schema
+ * described, not an oversight: schema naming people who are not on the page
+ * is a mismatch risk, and the client removed the page content first.
  */
 export function About({ locale }: { locale: Locale }) {
   const t = copy[locale];
@@ -23,8 +35,11 @@ export function About({ locale }: { locale: Locale }) {
   return (
     <Section id="tentang" headingId="about-heading" objectX={0.55}>
       {/* Centred, unruled, and on the original spacing — the client asked for
-          this arrangement back after seeing it as a left-hung ruled band. */}
-      <div className="flex flex-col items-center gap-6">
+          this arrangement back after seeing it as a left-hung ruled band.
+          z-30: elevated above the fixed architecture layer's z-20 (Task
+          10c) — this row sits directly in Section's unelevated wrapper, not
+          inside DarkPanel, so it needs its own stacking position. */}
+      <div className="relative z-30 flex flex-col items-center gap-6">
         <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
           {t.clients.label}
         </p>
@@ -127,44 +142,6 @@ export function About({ locale }: { locale: Locale }) {
             </div>
           ))}
         </Reveal>
-
-        {/* Two founders, folded into About rather than kept as their own
-            section. See content/copy.text.ts TeamMember doc for the note on
-            why `photo` stays unset today: no stand-in avatar renders in its
-            place, so the block reads as deliberately text-led rather than as
-            a "meet the team" grid missing its pictures — the same register
-            as the client marks and mission/vision above, which are also
-            typographic with no imagery. */}
-        <div className="mt-16 border-t border-border pt-10">
-          <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
-            {t.about.teamLabel}
-          </p>
-
-          <ul className="mt-6 grid gap-6 sm:grid-cols-2 lg:max-w-3xl">
-            {t.team.members.map((member) => (
-              <li key={member.id} className="flex flex-col gap-1">
-                {member.photo ? (
-                  <Image
-                    src={member.photo}
-                    alt={member.name}
-                    width={96}
-                    height={96}
-                    className="mb-2 size-14 rounded-full object-cover"
-                  />
-                ) : null}
-                <h3 className="font-heading text-base font-semibold tracking-[-0.01em]">
-                  {member.name}
-                </h3>
-                <p className="font-mono text-[0.625rem] uppercase tracking-[0.16em] text-metric">
-                  {member.role}
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  {member.bio}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
       </DarkPanel>
     </Section>
   );

@@ -4,6 +4,15 @@ import { cn } from "@/lib/utils";
 /**
  * Section shell. The page stays one continuous surface — no background change
  * between sections — so structure has to come from spacing and hairlines.
+ *
+ * This wrapper is deliberately NOT given a z-index above the fixed
+ * architecture layer (`z-20`, Task 10c). Elevating the whole section would
+ * carry every card and panel inside it up as one block, which would hide the
+ * object behind them exactly the way the old `-z-10` hid it behind
+ * everything — the opposite of this task. Instead, only the actual
+ * text-bearing pieces (`SectionHeader` below, `DarkPanel`'s content wrapper,
+ * every card) carry their own `z-30`, so the object stays visible in the
+ * space around and behind them.
  */
 export function Section({
   id,
@@ -49,6 +58,10 @@ export function Section({
  *
  * The label is `sticky` on large screens, so on a tall section it stays beside
  * the content it names. That is a small thing that reads as considered.
+ *
+ * Carries `z-30` (Task 10c) for the same reason `Billboard`'s copy block
+ * does: it is text, sitting in a `Section` wrapper that is deliberately not
+ * elevated, so it needs its own stacking position above the object's `z-20`.
  */
 /**
  * The black rounded panel. Three sections wear it now — about, products, and
@@ -71,17 +84,26 @@ export function Section({
  *
  * `translucent` is also a prop, not a default, and it is deliberately opt-in.
  * `DarkPanel` has two call sites — About and Contact — and only About needs
- * this: it sits at `objectX=0.55`, where the fixed architecture layer
- * (Task 10b) is supposed to be visible, and a fully opaque panel hid it
- * completely (checked by screenshot: even `bg-background/96` still showed
- * nothing through the panel, because the layer itself renders at 16-30%
- * opacity to begin with — two multiplied dampenings compound to near zero,
- * so `/80` is what it actually took to register). Contact sits at
- * `objectX=0`, which fades the layer to fully transparent in steady state, so
- * it has no need for this and keeps the plain opaque background — a shared
- * component defaulting to what only one caller needs is how the next caller
- * gets a surprise, so this is a prop each call site opts into rather than a
- * change to what `DarkPanel` does by default.
+ * this: it sits at `objectX=0.55`. Under Task 10b, when the architecture
+ * layer sat behind the page at 16-30% opacity, an opaque panel hid it
+ * completely and `/80` was what it took to let it show through. Task 10c
+ * moves the object in FRONT of this panel instead (see the z-layering note
+ * below), so the panel's own opacity no longer determines whether the object
+ * is visible there — it always is, because it now paints on top regardless of
+ * what sits underneath. `translucent` is left as a prop rather than removed:
+ * it is still a legitimate opacity choice for About's panel, just no longer
+ * the mechanism that makes the object show through.
+ *
+ * ## Z-layering (Task 10c)
+ *
+ * The fixed architecture layer moved to `z-20` (see `app/[locale]/page.tsx`).
+ * This panel's own background — the div below, with its border and optional
+ * glow — is deliberately left unelevated, so the object paints in front of
+ * it: that is what "above DarkPanel" in the brief means in practice. The
+ * `children` wrapper carries `z-30` instead of a bare `relative`, so
+ * everything rendered inside a `DarkPanel` (a `SectionHeader`, the mission/
+ * vision pull-quotes, Contact's CTA and detail grid) stays elevated above the
+ * object and reads exactly as it did before this task.
  */
 export function DarkPanel({
   children,
@@ -91,8 +113,8 @@ export function DarkPanel({
 }: {
   children: React.ReactNode;
   glow?: boolean;
-  /** See the comment above — opt in only where a fixed layer needs to show
-   * through and the section's pose never fades it to zero. */
+  /** See the comment above — an opacity choice for the panel's own surface,
+   * independent of the object's z-layering since Task 10c. */
   translucent?: boolean;
   className?: string;
 }) {
@@ -116,7 +138,7 @@ export function DarkPanel({
       {glow ? (
         <div aria-hidden="true" className="media-glow absolute inset-0" />
       ) : null}
-      <div className="relative">{children}</div>
+      <div className="relative z-30">{children}</div>
     </div>
   );
 }
@@ -140,7 +162,7 @@ export function SectionHeader({
   const hasSideColumn = Boolean(body || aside);
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative z-30", className)}>
       {/* Scale marker: a short heavy segment against a hairline, the way a
           gauge face is ruled. Structure, not ornament. */}
       <div aria-hidden="true" className="flex h-px w-full">

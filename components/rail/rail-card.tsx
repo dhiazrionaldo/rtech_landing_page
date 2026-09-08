@@ -64,7 +64,9 @@ export function RailCard({
 } & Record<`data-${string}`, string | undefined>) {
   return (
     <li
-      className={cn("shrink-0 snap-start", RAIL_CARD_WIDTH, className)}
+      // z-30: elevated above the fixed architecture layer's z-20 (Task 10c),
+      // same reasoning as components/ui/card.tsx.
+      className={cn("relative z-30 shrink-0 snap-start", RAIL_CARD_WIDTH, className)}
       {...rest}
     >
       <a

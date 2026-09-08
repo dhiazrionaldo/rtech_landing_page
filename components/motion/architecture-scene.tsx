@@ -33,9 +33,14 @@ import { resolveToken } from "@/lib/token-color";
  * and the pulse tick below are what call `invalidate()`, and both stop while
  * the tab is hidden.
  *
- * Colour is read from the design tokens at runtime, never hardcoded, and
- * re-read when the theme class changes. `--primary` appears nowhere: burnt
- * orange belongs to the call to action.
+ * Task 10c moved the layer to the FOREGROUND (see `app/[locale]/page.tsx` for
+ * the z-index this now carries) after two rounds of client feedback that the
+ * object at `-z-10` read as "not clearly shown". Colour is read from the
+ * design tokens at runtime, never hardcoded, and re-read when the theme class
+ * changes. `--primary` appears nowhere: burnt orange belongs to the call to
+ * action. The palette is now the full teal instrument ramp (`--chart-1` /
+ * `--chart-3`) rather than the near-white/grey scheme Task 10b shipped — see
+ * `readColors` below and the task report for why.
  */
 
 /** Label type size in scene units. IBM Plex Mono advances 0.6em per glyph. */
@@ -49,6 +54,55 @@ const LABEL_GAP = 0.34;
 const PULSE_PERIOD = 2.4;
 
 /**
+ * Longest a label line is allowed to run before `wrapLabel` breaks it onto a
+ * second line. Task 10c's seven new labels ("AI checklist generator",
+ * "Predictive maintenance") are meaningfully longer than anything in the
+ * 14-node graph, and a single-line plate at that length is wide enough that
+ * two same-tier neighbours' plates overlap regardless of how far apart the
+ * nodes sit within the frustum this camera can afford. Wrapping to two lines
+ * roughly halves the plate's width for the long labels and costs nothing for
+ * the short ones (`ERP`, `WMS`, ...), which never reach this limit. Applied
+ * uniformly rather than only to the new labels, so every plate in the scene
+ * is sized by the same rule.
+ */
+const LABEL_LINE_CHARS = 15;
+/** Line-to-line spacing for a wrapped, two-line label, in scene units. */
+const LABEL_LINE_HEIGHT = FONT_SIZE * 1.25;
+
+/**
+ * Breaks a label into at most two lines on a word boundary, greedily filling
+ * the first line up to `LABEL_LINE_CHARS`. Deterministic and synchronous —
+ * unlike drei's own `Text` reflow, this can be computed once and reused for
+ * both the plate's geometry and the node's own outboard offset, which is the
+ * same reasoning the file already applied to single-line width: the face is
+ * monospaced, so counting characters is exact and costs no layout.
+ */
+function wrapLabel(text: string): [string] | [string, string] {
+  if (text.length <= LABEL_LINE_CHARS) return [text];
+  const words = text.split(" ");
+  let line1 = "";
+  let i = 0;
+  for (; i < words.length; i++) {
+    const next = line1 ? `${line1} ${words[i]}` : words[i];
+    if (line1 && next.length > LABEL_LINE_CHARS) break;
+    line1 = next;
+  }
+  const line2 = words.slice(i).join(" ");
+  return line2 ? [line1, line2] : [line1];
+}
+
+/** Plate width from the longer of a label's (up to two) lines. */
+function labelWidth(lines: readonly string[]): number {
+  const maxChars = Math.max(...lines.map((line) => line.length));
+  return maxChars * MONO_ADVANCE * FONT_SIZE + CHIP_PAD_X * 2;
+}
+
+/** Plate height for one or two lines, with the usual padding. */
+function labelHeight(lines: readonly string[]): number {
+  return lines.length * LABEL_LINE_HEIGHT + CHIP_PAD_Y * 2;
+}
+
+/**
  * World units the diagram eases toward per unit of `data-object-x` (which
  * sections declare in the range -1..1). At the ±0.55 the choreography
  * actually uses, this is a ~1.2 unit shift — enough to read as the object
@@ -57,25 +111,21 @@ const PULSE_PERIOD = 2.4;
  */
 const POSE_SHIFT = 2.2;
 /**
- * The layer sits behind all content at reduced opacity, under the existing
- * scrims — CLAUDE.md's "one orchestrated moment" note applies to a hero
- * object, not a watermark, and this is what keeps a persistent object from
- * competing with body copy. Tuned down from an initial pass that made
- * paragraph text next to it noticeably harder to read; see the report for the
- * before/after. Contact fades to 0 — the CTA is the moment there.
- *
- * The hero is the one pose exempt from that constraint: there is no body copy
- * behind the object there, only the billboard's own scrim, so fix-round 1
- * gives it more presence than the mid-page poses carry — see `HERO_OPACITY`.
+ * Task 10b kept this layer at 16-30% opacity because it sat *behind* every
+ * section (`-z-10`) and had to compete with body copy sitting on top of it —
+ * a low ceiling was the only lever available to keep paragraphs readable.
+ * Task 10c removes that constraint at the root: the layer is now in front
+ * (see `app/[locale]/page.tsx`), and every piece of text on the page is
+ * elevated above it with its own `z-30` (billboard copy, section headers,
+ * `DarkPanel`'s content, every card) — see the report for the full list of
+ * touch points. Legibility is now a DOM stacking fact, not an opacity
+ * negotiation, so the object can run at near-full strength everywhere it is
+ * on screen, which is what "in front of, at full strength" in the brief
+ * actually asks for.
  */
-const BASE_OPACITY = 0.16;
-/**
- * The hero has no paragraph text sitting on the object — only the billboard's
- * scrim — so the legibility constraint that caps `BASE_OPACITY` doesn't apply
- * there. This is the page's signature element; at `BASE_OPACITY` alone it
- * read closer to the floor of visible than a hero object should.
- */
-const HERO_OPACITY = 0.3;
+const OBJECT_OPACITY = 0.92;
+/** Contact's pose (`data-object-x="0"`) still reads as "fade to nothing" —
+ *  the CTA is the moment there, not the object. Unchanged from Task 10b. */
 const FADE_OPACITY = 0;
 /** Damping rate for both the position ease and the opacity cross-fade. */
 const EASE_LAMBDA = 3.2;
@@ -89,13 +139,14 @@ type PoseRef = { current: Pose };
 /**
  * Reads every section's `[data-object-x]` and returns the pose of whichever
  * one is nearest the viewport's vertical centre. `data-object-x="0"` (Contact)
- * reads as "fade out" — the CTA is the moment there, not the object. The
- * Billboard is the only `[data-object-x]` host that's a `<header>` rather
- * than a `Section`/`Rail`-rendered `<section>`, which is what tells this
- * apart from every other 0.55/-0.55 pose without a second data attribute.
+ * reads as "fade out" — the CTA is the moment there, not the object. Every
+ * other pose now shares one opacity (`OBJECT_OPACITY`): Task 10b split hero
+ * from mid-page because the mid-page poses sat behind body copy and needed a
+ * lower ceiling; Task 10c's foreground layer removes that distinction — see
+ * `OBJECT_OPACITY` above.
  */
 function nearestPose(): Pose {
-  if (typeof document === "undefined") return { x: 0, opacity: BASE_OPACITY };
+  if (typeof document === "undefined") return { x: 0, opacity: OBJECT_OPACITY };
   const els = document.querySelectorAll<HTMLElement>("[data-object-x]");
   const viewportCenter = window.innerHeight / 2;
 
@@ -113,20 +164,24 @@ function nearestPose(): Pose {
     }
   }
 
-  if (!best) return { x: 0, opacity: BASE_OPACITY };
+  if (!best) return { x: 0, opacity: OBJECT_OPACITY };
   const raw = Number(best.dataset.objectX ?? "0");
-  const opacity =
-    raw === 0 ? FADE_OPACITY : best.tagName === "HEADER" ? HERO_OPACITY : BASE_OPACITY;
+  const opacity = raw === 0 ? FADE_OPACITY : OBJECT_OPACITY;
   return { x: raw * POSE_SHIFT, opacity };
 }
 
 type SceneColors = {
-  /** `--foreground`: node wireframes and label text. */
-  node: string;
-  /** `--border`: edges and the plinth outline. */
+  /** `--chart-1`: node wireframes and the travelling pulses. Bright by
+   *  design — L 0.855, the top of the teal ramp — because "the nodes and
+   *  brain is not clearly show" was the client's exact complaint. */
+  nodeGeometry: string;
+  /** `--chart-3`: edges, and the plinth's edging. Darker than the node/pulse
+   *  colour so the lines read as structure rather than competing with the
+   *  nodes for attention. */
   edge: string;
-  /** `--chart-2`: the pulses travelling the edges. The data ramp. */
-  pulse: string;
+  /** `--foreground`: label text. Never the teal ramp — a label is copy, and
+   *  copy stays on the same token every other word on the page uses. */
+  label: string;
   /** `--card`: the plinth and the label plates. */
   surface: string;
 };
@@ -137,25 +192,27 @@ function readColors(): SceneColors {
     return `rgb(${r}, ${g}, ${b})`;
   };
   return {
-    node: rgb("--foreground"),
-    edge: rgb("--border"),
-    pulse: rgb("--chart-2"),
+    nodeGeometry: rgb("--chart-1"),
+    edge: rgb("--chart-3"),
+    label: rgb("--foreground"),
     surface: rgb("--card"),
   };
 }
 
 /**
- * A label plate: the text on an opaque `--card` plane.
+ * A label plate: one or two lines of text on an opaque `--card` plane.
  *
- * The plate is what makes the labels legible. The canvas sits over a dimmed
- * photograph, and `--foreground` is near-black in light mode — bare text would
- * disappear there. Setting it on the same surface token the cards use puts the
- * label on a surface instead of on a photo, so it holds contrast in both
- * themes. It also happens to be the right vocabulary: an architecture diagram
- * is labelled boxes, not floating words.
+ * The plate is what makes the labels legible. Even sitting in front of the
+ * page now (Task 10c), a node's own colour is the bright top of the teal
+ * ramp — great for the wireframe, too saturated to read as fifteen-odd small
+ * words of running text — so the label keeps its own `--foreground` colour on
+ * its own `--card` surface rather than borrowing the node's colour. That also
+ * holds contrast in both themes and reads as the right vocabulary: an
+ * architecture diagram is labelled boxes, not floating words.
  *
- * Width is computed rather than measured because the face is monospaced — every
- * glyph advances exactly 0.6em, so the arithmetic is exact and costs no layout.
+ * Width and height come from `labelWidth`/`labelHeight` rather than measured,
+ * for the same reason as before: the face is monospaced, so the arithmetic on
+ * a wrapped, up-to-two-line string is exact and costs no layout.
  */
 function Label({
   text,
@@ -167,8 +224,9 @@ function Label({
   position: [number, number, number];
   colors: SceneColors;
 }) {
-  const width = text.length * MONO_ADVANCE * FONT_SIZE + CHIP_PAD_X * 2;
-  const height = FONT_SIZE + CHIP_PAD_Y * 2;
+  const lines = wrapLabel(text);
+  const width = labelWidth(lines);
+  const height = labelHeight(lines);
 
   return (
     <group position={position}>
@@ -176,17 +234,25 @@ function Label({
         <planeGeometry args={[width, height]} />
         <meshBasicMaterial color={colors.surface} />
       </mesh>
-      <Text
-        font="/fonts/ibm-plex-mono-500.ttf"
-        fontSize={FONT_SIZE}
-        color={colors.node}
-        anchorX="center"
-        anchorY="middle"
-        position={[0, 0, 0.01]}
-        letterSpacing={0.02}
-      >
-        {text}
-      </Text>
+      {lines.map((line, i) => {
+        // Centred as a block: one line sits on the plate's own centre line,
+        // two lines straddle it symmetrically.
+        const y = ((lines.length - 1) / 2 - i) * LABEL_LINE_HEIGHT;
+        return (
+          <Text
+            key={line}
+            font="/fonts/ibm-plex-mono-500.ttf"
+            fontSize={FONT_SIZE}
+            color={colors.label}
+            anchorX="center"
+            anchorY="middle"
+            position={[0, y, 0.01]}
+            letterSpacing={0.02}
+          >
+            {line}
+          </Text>
+        );
+      })}
     </group>
   );
 }
@@ -199,13 +265,13 @@ function Node({ node, label, colors }: { node: ArchNode; label: string; colors: 
   // clipping this used to cause at the outer columns by widening the camera
   // frustum (see the camera prop below) rather than touching this placement.
   const side = node.position[0] > 0 ? 1 : -1;
-  const width = label.length * MONO_ADVANCE * FONT_SIZE + CHIP_PAD_X * 2;
+  const width = labelWidth(wrapLabel(label));
 
   return (
     <group position={node.position}>
       <mesh>
         <octahedronGeometry args={[0.23, 0]} />
-        <meshBasicMaterial color={colors.node} wireframe />
+        <meshBasicMaterial color={colors.nodeGeometry} wireframe />
       </mesh>
       <Label
         text={label}
@@ -335,7 +401,7 @@ function Diagram({
             from={from}
             to={to}
             offset={index * 0.37}
-            color={colors.pulse}
+            color={colors.nodeGeometry}
           />
         );
       })}
@@ -358,7 +424,7 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
   // there, and resolving up front means the canvas never mounts with the wrong
   // colours and never triggers a cascading re-render.
   const [colors, setColors] = useState<SceneColors>(readColors);
-  const poseRef = useRef<Pose>({ x: 0, opacity: BASE_OPACITY });
+  const poseRef = useRef<Pose>({ x: 0, opacity: OBJECT_OPACITY });
   const invalidateRef = useRef<(() => void) | null>(null);
   const opacityRef = useRef(0);
 
@@ -477,12 +543,12 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
         dpr={[1, 1.5]}
         flat
         gl={{ antialias: true, powerPreference: "high-performance" }}
-        // Widened from the hero-only version (fov 38, z 9.6) in Step 5: the
-        // graph now spans x -2.4..2.4 with long labels on the outer columns,
-        // and the choreography shifts the whole group by up to POSE_SHIFT * 0.55
-        // world units. fov 44 / z 11 keeps every label's outer edge inside the
-        // frustum at both required test sizes — see the report for the numbers.
-        camera={{ position: [0, -0.1, 11], fov: 44 }}
+        // Widened again in Task 10c: seven tier-4 nodes zigzagged across x
+        // -2.9..2.8 push the widest labels out past the 14-node graph's
+        // -2.4..2.4, even after `wrapLabel` shrinks their footprint. fov 47 /
+        // z 11.6 (from 44 / 11) buys back the margin — screenshot-verified at
+        // 1440x900 and 1024x768, see the report.
+        camera={{ position: [0, -0.1, 11.6], fov: 47 }}
         onCreated={(state) => {
           // The deterministic first frame: capture `invalidate` and use it in
           // the same breath, rather than trusting some later tick or scroll

@@ -47,7 +47,10 @@ export function Process({ locale }: { locale: Locale }) {
           ordinary rounded surfaces while the section still reads as one run of
           work rather than four unrelated boxes. */}
       <div className="mt-16 lg:mt-24">
-        <div className="relative hidden lg:block">
+        {/* z-30: elevated above the fixed architecture layer's z-20 (Task
+            10c) — the rail line and its stage/gate markers are meaningful
+            UI, not the section's own background. */}
+        <div className="relative z-30 hidden lg:block">
           <ScrubRail />
           <ol
             aria-hidden="true"

@@ -1,4 +1,4 @@
-import { clients, contact, copy, seo } from "@/content/copy";
+import { clients, contact, seo } from "@/content/copy";
 import type { Locale } from "@/content/i18n";
 import { absoluteUrl, SITE_URL } from "@/lib/site";
 
@@ -16,17 +16,23 @@ import { absoluteUrl, SITE_URL } from "@/lib/site";
  *   - `FAQPage`  — the page has no visible FAQ. Google requires structured data
  *                  to match on-page content; FAQ markup without a rendered FAQ
  *                  is a guidelines violation.
- *   - (was `Person` — now emitted; the team section names two real people.)
  *   - `CreativeWork` per case study — waiting on /work/[slug].
+ *
+ * `Person` per team member — required by CLAUDE.md whenever the page names a
+ * team — was emitted here through Task 10b. Task 10c removed it, along with
+ * the `founder` reference on the Organization node that pointed at it,
+ * because the client asked for the "who you'll work with" section to come off
+ * the page (see `components/sections/about.tsx`). This is a deliberate,
+ * client-directed deviation from CLAUDE.md's schema list, not an oversight:
+ * a `Person` node naming someone who no longer appears on the page is a
+ * structured-data/on-page mismatch, which is the manual-action risk CLAUDE.md
+ * itself warns about for invented NAP data.
  */
 
 const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 
-const personId = (id: string) => `${SITE_URL}/#person-${id}`;
-
 export function StructuredData({ locale }: { locale: Locale }) {
   const meta = seo[locale];
-  const teamMembers = copy[locale].team.members;
 
   const graph = [
     {
@@ -71,10 +77,6 @@ export function StructuredData({ locale }: { locale: Locale }) {
         "@type": "Brand",
         name: "RTECH INDO",
       },
-      // Both are founders, so both belong in `founder` rather than one being
-      // demoted to `employee`. The @id refs point at the Person nodes below so
-      // the graph is linked rather than repeating the names as bare strings.
-      founder: teamMembers.map((member) => ({ "@id": personId(member.id) })),
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "sales",
@@ -108,30 +110,6 @@ export function StructuredData({ locale }: { locale: Locale }) {
         name: client.name,
       })),
     },
-    /**
-     * One `Person` per named team member, as CLAUDE.md requires.
-     *
-     * `jobTitle` and `description` come from the same locale dictionary the
-     * cards render from, so the markup can never drift from what is visible on
-     * the page — which is the condition Google actually enforces.
-     *
-     * No `image`: neither member has a photograph yet, and a Person node
-     * pointing at a stock portrait would publish the same false claim as the
-     * card would, only in a format aggregators consume directly. It appears
-     * here automatically once `photo` is set.
-     *
-     * No `sameAs` either — the deck lists no personal profiles, and guessing a
-     * LinkedIn URL is exactly the kind of invention this file avoids.
-     */
-    ...teamMembers.map((member) => ({
-      "@type": "Person",
-      "@id": personId(member.id),
-      name: member.name,
-      jobTitle: member.role,
-      description: member.bio,
-      worksFor: { "@id": ORGANIZATION_ID },
-      ...(member.photo ? { image: absoluteUrl(member.photo) } : {}),
-    })),
   ];
 
   const jsonLd = {

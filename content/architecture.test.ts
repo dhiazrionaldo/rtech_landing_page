@@ -66,8 +66,33 @@ test("the graph is acyclic", () => {
 });
 
 test("the graph is rich enough to read as a system, not a diagram of three boxes", () => {
-  assert.ok(architecture.nodes.length >= 12, `only ${architecture.nodes.length} nodes`);
+  // Task 10c: grown from 14 to 21 nodes — the seven additions are real project
+  // names pulled from expertise.sectors, not invented. See content/architecture.ts.
+  assert.ok(architecture.nodes.length >= 20, `only ${architecture.nodes.length} nodes`);
   assert.ok(architecture.edges.length >= 10, `only ${architecture.edges.length} edges`);
+});
+
+test("every tier-4 node (the seven named systems) is labelled in both locales", () => {
+  const TIER_4_IDS = [
+    "hse-inspection",
+    "piping",
+    "warehouse",
+    "cargo",
+    "checklist",
+    "maintenance",
+    "sales",
+  ] as const;
+  const byId = new Map(architecture.nodes.map((n) => [n.id, n]));
+  for (const id of TIER_4_IDS) {
+    const node = byId.get(id);
+    assert.ok(node, `tier-4 node ${id} is missing`);
+    for (const locale of ["en", "id"] as const) {
+      assert.ok(
+        node!.label[locale] && node!.label[locale].length > 0,
+        `${id} missing ${locale} label`,
+      );
+    }
+  }
 });
 
 test("every tier is populated", () => {

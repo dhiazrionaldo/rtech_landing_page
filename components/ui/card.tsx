@@ -18,6 +18,16 @@ import { cn } from "@/lib/utils";
  * Not glassmorphism: `bg-card` is an opaque token surface, there is no backdrop
  * blur, and nothing sits over a blurred gradient. CLAUDE.md bans that pattern
  * and this is not it.
+ *
+ * Carries `z-30` (Task 10c), same as `SectionHeader` and `DarkPanel`'s content
+ * wrapper: the fixed architecture layer sits at `z-20` now, in front of any
+ * normal-flow content, and a card is text a reader has to be able to finish.
+ * The whole card is elevated as one unit — background and copy together —
+ * rather than splitting the fill from the text the way `DarkPanel` does,
+ * because a card's fill is small enough that hiding the object behind it
+ * costs little, and doing the split here would mean re-deriving it for every
+ * card shape on the page (this one plus the two rail-card shapes) instead of
+ * once.
  */
 export function Card({
   as: Tag = "div",
@@ -35,7 +45,7 @@ export function Card({
   return (
     <Tag
       className={cn(
-        "relative rounded-2xl border border-border bg-card/60 p-7 md:p-8",
+        "relative z-30 rounded-2xl border border-border bg-card/60 p-7 md:p-8",
         interactive && [
           "transition-[transform,background-color,border-color] duration-300 ease-out",
           "hover:-translate-y-1 hover:border-foreground/25 hover:bg-card",
