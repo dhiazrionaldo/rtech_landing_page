@@ -2,12 +2,13 @@ import { notFound } from "next/navigation";
 
 import { About } from "@/components/sections/about";
 import { Billboard } from "@/components/sections/billboard";
+import { CapabilitiesRail } from "@/components/sections/capabilities-rail";
 import { Contact } from "@/components/sections/contact";
-import { Expertise } from "@/components/sections/expertise";
+import { IndustriesRail } from "@/components/sections/industries-rail";
 import { Process } from "@/components/sections/process";
-import { Products } from "@/components/sections/products";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { SiteNav } from "@/components/sections/site-nav";
+import { WorkRail } from "@/components/sections/work-rail";
 import { isLocale } from "@/content/i18n";
 
 /**
@@ -24,9 +25,10 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
       <SiteNav locale={locale} />
       <Billboard locale={locale} />
       <main className="flex-1">
+        <CapabilitiesRail locale={locale} />
+        <WorkRail locale={locale} />
+        <IndustriesRail locale={locale} />
         <About locale={locale} />
-        <Expertise locale={locale} />
-        <Products locale={locale} />
         {/* Last before the CTA on purpose: the process section ends on "you can
             stop at any boundary and keep what we built", which is the sentence
             that makes booking a call cheap. */}

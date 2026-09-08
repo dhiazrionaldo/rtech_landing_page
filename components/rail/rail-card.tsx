@@ -49,6 +49,7 @@ export function RailCard({
   priority,
   children,
   className,
+  ...rest
 }: {
   href: string;
   poster: StaticImageData;
@@ -60,9 +61,12 @@ export function RailCard({
   /** Rendered under the title. The blurb, a play affordance, a preview slot. */
   children?: React.ReactNode;
   className?: string;
-}) {
+} & Record<`data-${string}`, string | undefined>) {
   return (
-    <li className={cn("shrink-0 snap-start", RAIL_CARD_WIDTH, className)}>
+    <li
+      className={cn("shrink-0 snap-start", RAIL_CARD_WIDTH, className)}
+      {...rest}
+    >
       <a
         href={href}
         className="group block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
