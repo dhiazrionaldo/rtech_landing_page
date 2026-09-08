@@ -2543,6 +2543,137 @@ sitting off-canvas."
 
 ---
 
+### Task 10c: Foreground layer, teal instrument palette, richer graph, team block removed
+
+Client feedback after seeing Task 10b live: *"the nodes and brain is not clearly show, it should in front of and fixed also remove the who you'll work with is, and make it more AI nodes here the color also looks bad"*.
+
+Four changes. Two were put back to the client as choices; both answers are recorded below and are not open.
+
+**Files:**
+- Modify: `content/architecture.ts`, `content/architecture.test.ts`
+- Modify: `components/motion/architecture-scene.tsx`, `components/motion/architecture.tsx`
+- Modify: `app/[locale]/page.tsx`, `components/sections/about.tsx`, `components/seo/structured-data.tsx`, `content/copy.text.ts`
+- Modify: `MOTION.md`
+
+---
+
+#### Change 1 — The object moves to the FOREGROUND
+
+Today the layer is `-z-10`, behind everything. The client's decision: **in front, at full strength, with the copy still fully readable.**
+
+The outcome required, stated as outcome rather than technique:
+
+- The object paints **above** the billboard poster, above `DarkPanel`, above the rail cards — it is visibly in front of imagery and panels, not a faint texture behind them.
+- **Every word on the page stays as legible as it is today.** Headline, body copy, card titles, metadata strips, buttons, nav.
+- No hard mask edge anywhere. The object must not appear to be clipped by an invisible rectangle.
+
+The intended mechanism is a foreground canvas plus elevating text-bearing elements above it, and/or a soft mask that fades the object over the copy column. Pick what actually works and say what you chose and why. Constraints on whatever you pick:
+
+- The canvas container stays `pointer-events-none` and `aria-hidden="true"` — it must never intercept a click or reach the accessibility tree.
+- The nav (`fixed z-50`) and the chat dock added in a later task must stay above the object. Leave headroom in the z-scale; do not take `z-50` or above.
+- The billboard poster must remain the LCP element. Raising the canvas must not change what paints first.
+
+**Legibility is the gate, not the object.** If any copy ends up harder to read than it is today, the object is wrong — fix the object, never the type.
+
+#### Change 2 — Full teal instrument palette
+
+Client's decision. Replace the current near-white/grey scheme:
+
+| Element | Token |
+|---|---|
+| Node geometry | `--chart-1` |
+| Edges | `--chart-3` |
+| Travelling pulses | `--chart-1` |
+| Labels | `--foreground` |
+| Plinth | `--card`, with `--chart-3` edging |
+
+`CLAUDE.md` reserves the teal ramp for metrics and data visualisation. An architecture diagram is data visualisation, so this is the palette used as designed: cool data, warm CTA.
+
+**No `--primary` anywhere in the scene.** Unchanged and non-negotiable.
+
+Note `--chart-1` is L 0.855 — bright. That is the point here: the client's complaint is that the object does not read clearly.
+
+#### Change 3 — More nodes, all real
+
+Grow from 14 to 21. The seven additions are **project names already on this page**, taken from `expertise.sectors` — nothing invented:
+
+| id | EN label | ID label | capability | from |
+|---|---|---|---|---|
+| `hse-inspection` | AI HSE inspection | Inspeksi HSE AI | `ai-apps` | Oil and Gas |
+| `piping` | Piping visualisation | Visualisasi perpipaan | `web-apps` | Oil and Gas |
+| `warehouse` | Warehouse management | Manajemen gudang | `web-apps` | Aviation |
+| `cargo` | Cargo execution | Eksekusi kargo | `ai-agents` | Aviation |
+| `checklist` | AI checklist generator | Generator checklist AI | `ai-apps` | Manufacture |
+| `maintenance` | Predictive maintenance | Pemeliharaan prediktif | `ai-apps` | Manufacture |
+| `sales` | Sales prediction | Prediksi penjualan | `ai-apps` | Manufacture |
+
+New tier layout — six tiers, every edge still descending:
+
+```
+y =  3.4   erp        hris       wms        scada          (client-owned sources)
+y =  2.0        integration          pipeline              (what we build)
+y =  0.7   agent   forecast   vision   extraction          (the AI capabilities)
+y = -0.6   hse  piping  warehouse  cargo  checklist        (systems we shipped)
+                 maintenance  sales
+y = -1.9      tablet     command     mobile                (where people work)
+y = -3.2            [ on-premise server ]                  (the ground; edgeless)
+```
+
+Spread tier 4's seven nodes across x and stagger their z so labels do not collide.
+
+Suggested edges (all descend; adjust x/z freely, not the direction):
+`vision→hse-inspection`, `vision→piping`, `agent→warehouse`, `agent→cargo`, `extraction→checklist`, `forecast→maintenance`, `forecast→sales`, then `hse-inspection→tablet`, `piping→command`, `warehouse→command`, `cargo→mobile`, `checklist→tablet`, `maintenance→command`, `sales→command`.
+
+**The hard limit:** every node keeps a legible label. `CLAUDE.md` bans "particle fields of connected nodes and edges standing in for 'a neural network'" and says an object that "degrades into unlabeled dots and lines has become the cliché." Twenty-one labelled real systems is a diagram of this company's work. Twenty-one unlabelled dots is the thing this was built to avoid.
+
+**If 21 labels cannot all stay legible, stop at the largest number that can and report which you dropped and why. Do not ship unlabelled nodes.**
+
+Update the test asserting `>= 12` nodes to assert `>= 20`, and add a test that every node in the new tier has a non-empty label in both locales.
+
+#### Change 4 — Remove the team block
+
+Client asked for "Who you'll work with" to go.
+
+- Remove the team block markup from `components/sections/about.tsx` — the label, the member list, the photo slot.
+- Remove `about.teamLabel` from the `Dict` type and both dictionaries.
+- **Remove the `Person` JSON-LD from `components/seo/structured-data.tsx`, and the `employee` references that point at those `@id`s.** Schema naming people who no longer appear on the page is a mismatch, and mismatched structured data is a manual-action risk. This is not optional cleanup — it ships with the removal.
+- `t.team.members` becomes unread. Remove `team` from the `Dict` type and both dictionaries entirely, along with the `TeamMember` type if nothing else uses it. Confirm with a grep before deleting.
+- `CLAUDE.md` lists `Person` per team member as required schema. It is being removed because the client removed the content it described. Note that in your report as a deliberate, client-directed deviation so it is not mistaken for an oversight.
+
+---
+
+#### Gates
+
+- **No new dependencies.** `package.json` byte-identical.
+- No hardcoded colours; every scene colour via `resolveToken`.
+- Server Components by default; only the wrapper and scene are client. React Compiler on.
+- Named exports. No `any`. No `@ts-ignore` without a comment. No `console.log`.
+- Still **no WebGL below 768px and none under `prefers-reduced-motion: reduce`**, gated before the dynamic import resolves.
+- `dpr={[1, 1.5]}`, `frameloop="demand"`, pulse tick ≤20fps, suspended on `visibilityState === "hidden"`.
+- `npm test`, `npm run typecheck`, `npm run lint`, `npm run build` all pass. Lint 0 errors AND 0 warnings.
+
+#### Verify
+
+```bash
+printf 'team label gone:  '; curl -s http://localhost:3001/en | grep -c "Who you.ll work with"   # 0
+printf 'Person schema:    '; curl -s http://localhost:3001/en | grep -c '"@type":"Person"'        # 0
+printf 'h1 count:         '; curl -s http://localhost:3001/en | grep -o '<h1' | wc -l             # 1
+printf 'opacity:0 in HTML:'; curl -s http://localhost:3001/en | grep -c 'opacity:0'               # 0
+```
+
+Then screenshot, on a **cold load with no scrolling**, at 1440x900:
+1. The hero — is the object clearly visible and in front? Is the headline still crisp?
+2. Scrolled to the capabilities rail — do the card titles and body text read as well as before?
+3. Scrolled to Contact — is the CTA unobstructed?
+
+Describe all three honestly. If the object is still not clearly visible, say so — that is the entire point of this task.
+
+Commit as soon as the gates pass, then screenshot and amend if needed.
+
+**PAUSE FOR REVIEW.**
+
+---
+
 # Phase 3 — Hover preview and the scoping concierge
 
 *(CLAUDE.md stage 4. Pause for review at the end of Task 16.)*
