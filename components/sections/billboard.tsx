@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { Architecture } from "@/components/motion/architecture";
 import { CountUp } from "@/components/motion/count-up";
 import { ActionButton } from "@/components/ui/action-button";
 import { clients, copy } from "@/content/copy";
@@ -24,7 +25,6 @@ export function Billboard({ locale }: { locale: Locale }) {
 
   return (
     <header className="relative isolate flex min-h-[min(94svh,960px)] flex-col justify-end overflow-hidden">
-      {/* The frame Task 10 animates into the first rail card. */}
       <div
         id="billboard-frame"
         data-billboard-frame=""
@@ -50,6 +50,16 @@ export function Billboard({ locale }: { locale: Locale }) {
             they survive a theme switch. */}
         <div className="absolute inset-0 bg-gradient-to-r from-background from-42% via-background/85 via-62% to-transparent to-78%" />
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/85 to-transparent" />
+
+        {/* The page's one orchestrated moment. Upper right, oversized, bleeding
+            past the frame — the title block owns the lower left, so the two
+            never meet. It lives inside this -z-10 frame, so it is behind the
+            copy at every width; it is composited after the scrims rather than
+            under them because the bottom scrim would otherwise wash out the
+            on-premise plinth, which is the part carrying the argument. */}
+        <div className="pointer-events-none absolute right-0 top-[6%] hidden h-[80%] w-[52vw] max-w-[820px] md:block">
+          <Architecture locale={locale} />
+        </div>
       </div>
 
       <div className="mx-auto w-full max-w-[1400px] px-3 pb-10 pt-28 md:px-6 md:pb-14">
@@ -112,8 +122,10 @@ export function Billboard({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {/* The billboard media is decorative, so what it shows exists as text. */}
+      {/* The billboard media and the 3D object are both decorative, so what
+          they show exists as text. */}
       <p className="sr-only">{t.hero.mediaDescription}</p>
+      <p className="sr-only">{t.hero.architectureDescription}</p>
     </header>
   );
 }

@@ -32,7 +32,7 @@ export function WorkRail({ locale }: { locale: Locale }) {
       titleId="work-heading"
       labels={{ prev: t.rails.prev, next: t.rails.next }}
     >
-      {t.products.items.map((product, index) => {
+      {t.products.items.map((product) => {
         const capture = productCaptures[product.id];
         const meta = [
           product.client,
@@ -53,7 +53,6 @@ export function WorkRail({ locale }: { locale: Locale }) {
             alt=""
             meta={meta}
             title={product.name}
-            {...(index === 0 ? { "data-rail-first-card": "" } : {})}
           >
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {product.blurb}
