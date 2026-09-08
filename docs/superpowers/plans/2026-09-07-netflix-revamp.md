@@ -3411,7 +3411,18 @@ hasOfferCatalog: {
 },
 ```
 
-- [ ] **Step 3: Add FAQPage**
+- [ ] **Step 3: Add BreadcrumbList to the case-study routes**
+
+`CLAUDE.md` lists `BreadcrumbList` as non-negotiable on every route. Task 8 shipped a
+real `<nav aria-label="Breadcrumb">` landmark on `/work/[slug]` but no matching
+schema, because the Task 8 brief scoped it out. Close that gap here.
+
+Emit a `BreadcrumbList` on each case-study route whose items match the visible
+breadcrumb exactly — the site root, then the work rail, then the current product.
+Build it from the same values the visible nav renders, not a parallel copy: a
+breadcrumb schema that disagrees with the visible trail is a manual-action risk.
+
+- [ ] **Step 4: Add FAQPage**
 
 Add a `faq` array to both dictionaries. Six questions, taken from what the concierge is most likely to be asked, each answered only from facts already on the page. This is free SEO and it also gives a visitor the answer without opening the dock.
 
@@ -3428,7 +3439,7 @@ Create `components/sections/faq.tsx` — a server component rendering a `<sectio
 
 The visible copy and the schema must say the same thing, string for string. Mismatched FAQ schema is a manual-action risk, so build both from the same `t.faq` array rather than writing the answers twice.
 
-- [ ] **Step 4: Verify**
+- [ ] **Step 5: Verify**
 
 Run: `npm run build`, then paste the rendered page source into the Rich Results Test and confirm `ProfessionalService`, `Organization`, `Person`, `FAQPage` and `BreadcrumbList` all validate with zero errors. Do the same for one `/work/[slug]` page and confirm `CreativeWork` validates.
 
@@ -3441,11 +3452,11 @@ curl -s http://localhost:3000/en/work/optigain | grep -o '<h1' | wc -l  # 1
 
 Confirm hreflang and canonical are present on both locales and on a work page.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: add service catalog and FAQ schema
+git commit -m "feat: add service catalog, breadcrumb and FAQ schema
 
 The page now claims five service lines and none were in the schema.
 FAQ answers are drawn from existing copy only, and the visible section
