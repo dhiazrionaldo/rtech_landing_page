@@ -37,6 +37,7 @@ export function CapabilitiesRail({ locale }: { locale: Locale }) {
       title={t.rails.capabilities}
       titleId="capabilities-heading"
       labels={{ prev: t.rails.prev, next: t.rails.next }}
+      objectX={-0.55}
     >
       {capabilities[locale].map(({ id, name, line, body, icon }) => {
         const Icon = ICONS[icon];

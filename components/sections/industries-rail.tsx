@@ -19,6 +19,7 @@ export function IndustriesRail({ locale }: { locale: Locale }) {
       title={t.rails.industries}
       titleId="industries-heading"
       labels={{ prev: t.rails.prev, next: t.rails.next }}
+      objectX={-0.55}
     >
       {t.expertise.sectors.map((sector) => (
         <li

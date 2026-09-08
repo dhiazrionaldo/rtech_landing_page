@@ -21,7 +21,7 @@ export function About({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="tentang" headingId="about-heading">
+    <Section id="tentang" headingId="about-heading" objectX={0.55}>
       {/* Centred, unruled, and on the original spacing — the client asked for
           this arrangement back after seeing it as a left-hung ruled band. */}
       <div className="flex flex-col items-center gap-6">

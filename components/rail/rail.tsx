@@ -18,6 +18,7 @@ export function Rail({
   title,
   titleId,
   labels,
+  objectX,
   children,
   className,
 }: {
@@ -25,6 +26,12 @@ export function Rail({
   title: string;
   titleId: string;
   labels: { prev: string; next: string };
+  /**
+   * Where this rail wants the fixed architecture layer, -1 (left) to 1
+   * (right). See `Section`'s `objectX` for the mechanism — this is the same
+   * `data-object-x` contract on a `<section>` that isn't built with `Section`.
+   */
+  objectX?: number;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -34,6 +41,7 @@ export function Rail({
     <section
       id={id}
       aria-labelledby={titleId}
+      data-object-x={objectX}
       className={cn("scroll-mt-24 py-10 md:py-14", className)}
     >
       <div className="mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6">

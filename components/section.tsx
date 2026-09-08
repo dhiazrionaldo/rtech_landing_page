@@ -8,11 +8,19 @@ import { cn } from "@/lib/utils";
 export function Section({
   id,
   headingId,
+  objectX,
   children,
   className,
 }: {
   id?: string;
   headingId: string;
+  /**
+   * Where this section wants the fixed architecture layer, -1 (left) to 1
+   * (right). Rendered as `data-object-x` — the scene reads every one of these
+   * on scroll and eases toward whichever sits nearest the viewport centre.
+   * Omit on a section that shouldn't be a choreography stop.
+   */
+  objectX?: number;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -20,6 +28,7 @@ export function Section({
     <section
       id={id}
       aria-labelledby={headingId}
+      data-object-x={objectX}
       className={cn("scroll-mt-24 px-3 py-20 md:px-6 md:py-28", className)}
     >
       <div className="mx-auto w-full max-w-[1400px]">{children}</div>
@@ -72,10 +81,16 @@ export function DarkPanel({
   return (
     <div
       className={cn(
-        // Opaque. The translucency here existed only so the node field could read
-        // through four panels down the page. The field is gone; a panel that is
-        // almost-but-not-quite the page background is just a rendering cost.
-        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background text-foreground",
+        // Task 10b brought the architecture layer back as a fixed object behind
+        // every section, including About, which wears this panel. Fully opaque
+        // (the choice made when the node field it used to read through was
+        // removed) would hide that layer completely here, defeating the
+        // choreography that puts it on this section's side. `/96` is a small
+        // enough gap that the layer's own low opacity barely registers through
+        // it — legibility is the gate CLAUDE.md sets, not the object's
+        // visibility, so this errs toward keeping body copy exactly as
+        // readable as an opaque panel rather than toward showing more object.
+        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background/96 text-foreground",
         "px-6 py-16 md:rounded-[2rem] md:px-10 md:py-20 lg:px-14",
         className,
       )}

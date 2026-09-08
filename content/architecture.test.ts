@@ -64,3 +64,27 @@ test("the graph is acyclic", () => {
   }
   for (const node of architecture.nodes) visit(node.id);
 });
+
+test("the graph is rich enough to read as a system, not a diagram of three boxes", () => {
+  assert.ok(architecture.nodes.length >= 12, `only ${architecture.nodes.length} nodes`);
+  assert.ok(architecture.edges.length >= 10, `only ${architecture.edges.length} edges`);
+});
+
+test("every tier is populated", () => {
+  const ys = new Set(architecture.nodes.map((n) => n.position[1]));
+  assert.ok(ys.size >= 4, "nodes must occupy at least four distinct tiers");
+});
+
+test("source systems we did not build are unowned", () => {
+  const sources = architecture.nodes.filter((n) => n.capability === null);
+  assert.ok(sources.length >= 3, "at least three client-owned source systems");
+});
+
+test("every capability except erp-integration appears at least once", () => {
+  const claimed = new Set(
+    architecture.nodes.map((n) => n.capability).filter(Boolean),
+  );
+  for (const id of ["ai-agents", "ai-apps", "web-apps", "hardware"] as const) {
+    assert.ok(claimed.has(id), `no node stands for ${id}`);
+  }
+});

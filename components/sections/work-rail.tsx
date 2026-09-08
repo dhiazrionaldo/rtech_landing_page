@@ -31,6 +31,7 @@ export function WorkRail({ locale }: { locale: Locale }) {
       title={t.rails.work}
       titleId="work-heading"
       labels={{ prev: t.rails.prev, next: t.rails.next }}
+      objectX={0.55}
     >
       {t.products.items.map((product) => {
         const capture = productCaptures[product.id];

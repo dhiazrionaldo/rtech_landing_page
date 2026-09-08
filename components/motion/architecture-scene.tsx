@@ -3,6 +3,7 @@
 import { Edges, Line, Text } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
+import { MathUtils } from "three";
 import type { Group, Mesh } from "three";
 
 import {
@@ -23,6 +24,15 @@ import { resolveToken } from "@/lib/token-color";
  * the visual answer to "where does our data go", which is the question this
  * audience asks first.
  *
+ * Task 10b turned this from a hero-only object into a fixed layer that
+ * persists down the page (mounted once, in `app/[locale]/page.tsx`, behind
+ * every section) and eases left or right depending on which section holds the
+ * viewport centre. `poseRef` carries that target — see `nearestPose` below —
+ * and `Diagram`'s own `useFrame` damps its group toward it every render.
+ * `frameloop="demand"` means nothing renders on its own; the scroll handler
+ * and the pulse tick below are what call `invalidate()`, and both stop while
+ * the tab is hidden.
+ *
  * Colour is read from the design tokens at runtime, never hardcoded, and
  * re-read when the theme class changes. `--primary` appears nowhere: burnt
  * orange belongs to the call to action.
@@ -37,6 +47,62 @@ const CHIP_PAD_Y = 0.075;
 const LABEL_GAP = 0.34;
 /** Seconds for one pulse to travel an edge end to end. */
 const PULSE_PERIOD = 2.4;
+
+/**
+ * World units the diagram eases toward per unit of `data-object-x` (which
+ * sections declare in the range -1..1). At the ±0.55 the choreography
+ * actually uses, this is a ~1.2 unit shift — enough to read as the object
+ * sitting to one side of the screen while still leaving margin inside the
+ * frustum widened in Step 5, on both the widened graph and the shifted pose.
+ */
+const POSE_SHIFT = 2.2;
+/**
+ * The layer sits behind all content at reduced opacity, under the existing
+ * scrims — CLAUDE.md's "one orchestrated moment" note applies to a hero
+ * object, not a watermark, and this is what keeps a persistent object from
+ * competing with body copy. Tuned down from an initial pass that made
+ * paragraph text next to it noticeably harder to read; see the report for the
+ * before/after. Contact fades to 0 — the CTA is the moment there.
+ */
+const BASE_OPACITY = 0.16;
+const FADE_OPACITY = 0;
+/** Damping rate for both the position ease and the opacity cross-fade. */
+const EASE_LAMBDA = 3.2;
+/** Pulse/redraw tick. Capped well under 60fps because this layer is on
+ * screen for the whole page, not just a hero that pauses off-screen. */
+const TICK_MS = 1000 / 20;
+
+type Pose = { x: number; fadeOut: boolean };
+type PoseRef = { current: Pose };
+
+/**
+ * Reads every section's `[data-object-x]` and returns the pose of whichever
+ * one is nearest the viewport's vertical centre. `data-object-x="0"` (Contact)
+ * reads as "fade out" — the CTA is the moment there, not the object.
+ */
+function nearestPose(): Pose {
+  if (typeof document === "undefined") return { x: 0, fadeOut: false };
+  const els = document.querySelectorAll<HTMLElement>("[data-object-x]");
+  const viewportCenter = window.innerHeight / 2;
+
+  // A plain for-of, not `.forEach`, because TypeScript's control-flow
+  // narrowing does not track reassignment of an outer `let` from inside a
+  // closure — `best` would still read as `null` after the loop.
+  let best: HTMLElement | null = null;
+  let bestDistance = Infinity;
+  for (const el of els) {
+    const rect = el.getBoundingClientRect();
+    const distance = Math.abs(rect.top + rect.height / 2 - viewportCenter);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = el;
+    }
+  }
+
+  if (!best) return { x: 0, fadeOut: false };
+  const raw = Number(best.dataset.objectX ?? "0");
+  return { x: raw * POSE_SHIFT, fadeOut: raw === 0 };
+}
 
 type SceneColors = {
   /** `--foreground`: node wireframes and label text. */
@@ -113,7 +179,9 @@ function Label({
 function Node({ node, label, colors }: { node: ArchNode; label: string; colors: SceneColors }) {
   // Labels sit outboard: left of the left column, right of the right column,
   // left of the centre column. That keeps every plate off the edges it would
-  // otherwise cross, without a hand-placed offset per node.
+  // otherwise cross, without a hand-placed offset per node. Step 5 fixed the
+  // clipping this used to cause at the outer columns by widening the camera
+  // frustum (see the camera prop below) rather than touching this placement.
   const side = node.position[0] > 0 ? 1 : -1;
   const width = label.length * MONO_ADVANCE * FONT_SIZE + CHIP_PAD_X * 2;
 
@@ -192,18 +260,36 @@ function Pulse({
   );
 }
 
-function Diagram({ locale, colors }: { locale: Locale; colors: SceneColors }) {
+function Diagram({
+  locale,
+  colors,
+  poseRef,
+}: {
+  locale: Locale;
+  colors: SceneColors;
+  poseRef: PoseRef;
+}) {
   const group = useRef<Group>(null);
   const byId = new Map<ArchNodeId, ArchNode>(
     architecture.nodes.map((node) => [node.id, node]),
   );
 
-  // A slow sway rather than a spin. Enough parallax to read as an object in
-  // space; small enough that the labels stay square to the camera.
-  useFrame(({ clock }) => {
+  // A slow sway rather than a spin, plus the section choreography: the group's
+  // x position is damped toward whichever section currently owns the
+  // viewport centre. Damped, not tweened — `MathUtils.damp` is
+  // framerate-independent, which matters here because `frameloop="demand"`
+  // means frames arrive at an uneven cadence (up to display refresh while
+  // scrolling, throttled to the 20fps tick otherwise).
+  useFrame(({ clock }, delta) => {
     if (!group.current) return;
     group.current.rotation.y = -0.16 + Math.sin(clock.elapsedTime * 0.24) * 0.075;
     group.current.rotation.x = 0.05 + Math.sin(clock.elapsedTime * 0.19) * 0.025;
+    group.current.position.x = MathUtils.damp(
+      group.current.position.x,
+      poseRef.current.x,
+      EASE_LAMBDA,
+      delta,
+    );
   });
 
   const endpoints = (edge: ArchEdge) => ({
@@ -256,9 +342,9 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
   // there, and resolving up front means the canvas never mounts with the wrong
   // colours and never triggers a cascading re-render.
   const [colors, setColors] = useState<SceneColors>(readColors);
-  // Starts true because the hero is at the top of the page; the observer
-  // corrects it on its first callback either way.
-  const [onScreen, setOnScreen] = useState(true);
+  const poseRef = useRef<Pose>({ x: 0, fadeOut: false });
+  const invalidateRef = useRef<(() => void) | null>(null);
+  const opacityRef = useRef(0);
 
   // Tokens are OKLCH custom properties, so they can only be read once there is
   // a document. Re-read whenever the theme class on <html> changes: the canvas
@@ -272,29 +358,80 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
     return () => observer.disconnect();
   }, []);
 
-  // Rendering off-screen is wasted battery, so visibility drives `frameloop`
-  // rather than merely hiding the element.
+  // The choreography: read the nearest section's pose on scroll and resize,
+  // ease toward it (position via the Three.js group, opacity via a direct
+  // style write here — cheaper than a React re-render 20 times a second), and
+  // keep the scene alive at a capped rate rather than a free-running 60fps
+  // loop for the length of the page. See Step 6/7 in the task brief for why
+  // this shape: a fixed layer cannot rely on an off-screen pause the way a
+  // hero-only object could.
   useEffect(() => {
-    const el = host.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setOnScreen(entry.isIntersecting),
-      { rootMargin: "120px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    let rafHandle = 0;
+    let scrollScheduled = false;
+    let lastTick = performance.now();
+
+    const applyOpacity = (dt: number) => {
+      const el = host.current;
+      if (!el) return;
+      const target = poseRef.current.fadeOut ? FADE_OPACITY : BASE_OPACITY;
+      opacityRef.current = MathUtils.damp(opacityRef.current, target, EASE_LAMBDA, dt);
+      el.style.opacity = opacityRef.current.toFixed(3);
+    };
+
+    const recomputePose = () => {
+      poseRef.current = nearestPose();
+    };
+
+    const onScrollOrResize = () => {
+      if (scrollScheduled || document.visibilityState === "hidden") return;
+      scrollScheduled = true;
+      rafHandle = requestAnimationFrame(() => {
+        scrollScheduled = false;
+        recomputePose();
+        invalidateRef.current?.();
+      });
+    };
+
+    recomputePose();
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      const now = performance.now();
+      const dt = Math.min(0.2, (now - lastTick) / 1000);
+      lastTick = now;
+      applyOpacity(dt);
+      invalidateRef.current?.();
+    }, TICK_MS);
+
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize, { passive: true });
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+      if (rafHandle) cancelAnimationFrame(rafHandle);
+    };
   }, []);
 
   return (
-    <div ref={host} className="size-full">
+    <div ref={host} className="size-full" style={{ opacity: 0 }}>
       <Canvas
-        frameloop={onScreen ? "always" : "never"}
+        frameloop="demand"
         dpr={[1, 1.5]}
         flat
         gl={{ antialias: true, powerPreference: "high-performance" }}
-        camera={{ position: [0, -0.15, 9.6], fov: 38 }}
+        // Widened from the hero-only version (fov 38, z 9.6) in Step 5: the
+        // graph now spans x -2.4..2.4 with long labels on the outer columns,
+        // and the choreography shifts the whole group by up to POSE_SHIFT * 0.55
+        // world units. fov 44 / z 11 keeps every label's outer edge inside the
+        // frustum at both required test sizes — see the report for the numbers.
+        camera={{ position: [0, -0.1, 11], fov: 44 }}
+        onCreated={(state) => {
+          invalidateRef.current = state.invalidate;
+        }}
       >
-        <Diagram locale={locale} colors={colors} />
+        <Diagram locale={locale} colors={colors} poseRef={poseRef} />
       </Canvas>
     </div>
   );

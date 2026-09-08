@@ -24,10 +24,15 @@ page against the performance budget.
 - **Every trigger is created inside `gsap.context()`** and reverted on unmount.
 - **GSAP is dynamically imported**, so it lands in a chunk fetched on first
   motion component mount rather than in the initial bundle.
-- **No canvas, no WebGL.** The node field and brain field were removed on
-  2026-09-07: CLAUDE.md bans particle fields standing in for a neural network
-  and wireframe brains by name. The budget they freed pays for the billboard
-  and the hover-preview rails.
+- **One canvas.** The node field and brain field were removed on 2026-09-07:
+  CLAUDE.md bans particle fields standing in for a neural network and
+  wireframe brains by name. The budget they freed pays for the labelled
+  architecture object below (trigger 7) and the hover-preview rails. That
+  object is the one exception to "no canvas" in this file, and CLAUDE.md's "one
+  orchestrated 3D moment" rule is under some tension with it now that it is a
+  fixed layer present through every section rather than a single hero beat —
+  see trigger 7 for the mitigations (reduced opacity, nothing else on the page
+  gains motion) and why the client asked for it anyway.
 
 ## Triggers
 
@@ -39,17 +44,48 @@ page against the performance budget.
 | 4 | Process rail | `ScrubRail` in `process.tsx` | `top 75%` | `center center` | **0.6** | no | `scaleX 0→1`, origin left |
 | ~~5~~ | ~~Contact reassurance cards~~ | removed | — | — | — | — | The three cards are one static line of copy now. See the note in `content/copy.ts` on why three claims about our own candour was a formula. |
 | 6 | Stat counters (`3`, `10`) | `CountUp` in `hero.tsx` | `top 92%` | — | no | yes | integer 0→value over 1.1s |
-| 7 | Rail cards (all three rails) | `Reveal` in `rail.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 16→0`, stagger 0.06s |
+| 7 | Fixed architecture layer | `ArchitectureScene` in `architecture-scene.tsx` | n/a — not a ScrollTrigger | n/a | continuous, damped | no | group `position.x` damped toward the nearest section's pose, layer `opacity` cross-fades the same way |
+| 8 | Rail cards (all three rails) | `Reveal` in `rail.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 16→0`, stagger 0.06s |
 
-Trigger 4 is the only scrubbed animation on the page, and deliberately so. The
-rail stands for a run of work with a direction, so tying how much of it is drawn
-to how far into the section you are says something true. Scrubbing anything
-decorative is how a page starts to feel like it is animating *at* you.
+Trigger 4 is the only scrubbed **GSAP** animation on the page, and deliberately
+so. The rail stands for a run of work with a direction, so tying how much of it
+is drawn to how far into the section you are says something true. Scrubbing
+anything decorative is how a page starts to feel like it is animating *at* you.
 
 Trigger 6 skips the founding year on purpose. `2018` was never a quantity, and a
 year spinning like an odometer on a page whose argument is "we do not inflate
 numbers" is the wrong note. The flag lives on the stat data as `countUp` in
 `content/copy.ts`.
+
+Trigger 7 is not a `ScrollTrigger` at all — CLAUDE.md asks for "a simple damped
+lerp, not a GSAP tween per section" here, because the pose is a standing
+position (which section currently owns the viewport centre), not a progress
+value tied to scroll distance the way trigger 4's rail is. Mechanism:
+
+- Every section that participates declares its pose with `data-object-x`
+  (`-1`..`1`, negative = left): `Billboard`'s `<header>` directly, `Section`
+  and `Rail` via an `objectX` prop. Billboard `0.55`, Capabilities rail `-0.55`,
+  Work rail `0.55`, Industries rail `-0.55`, About `0.55`, Process `-0.55`,
+  Contact `0` (which also reads as "fade the object to 0 opacity" — the CTA is
+  the moment there, not the object).
+- A `window` `scroll`/`resize` listener, rAF-throttled to once per animation
+  frame, reads every `[data-object-x]` element's `getBoundingClientRect()`,
+  picks whichever sits nearest the viewport's vertical centre, and writes its
+  pose into a ref. A `setInterval` tick capped at 20fps (`TICK_MS` in
+  `architecture-scene.tsx`) reads that ref every tick and damps the group's
+  `position.x` (via `three`'s `MathUtils.damp`, framerate-independent) and the
+  host `<div>`'s CSS `opacity` toward it. Both the scroll handler and the tick
+  call the R3F store's `invalidate()` — `frameloop="demand"`, so nothing
+  renders unless one of them asks it to.
+- The tick — and therefore all motion, including the edge pulses' own
+  `useFrame` — stops calling `invalidate()` entirely when
+  `document.visibilityState === "hidden"`.
+- Camera: `fov: 44`, `position: [0, -0.1, 11]`. Widened from the hero-only
+  version (`fov: 38`, `z: 9.6`) in the same change that widened the graph to
+  fourteen nodes — the frustum has to fit both the graph's own x -2.4..2.4
+  span with its outboard labels *and* the up to ~1.2-world-unit shift the
+  choreography adds on top, at both required test sizes. See the task report
+  for the measured margins.
 
 ## Non-scroll motion
 

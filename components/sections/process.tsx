@@ -34,7 +34,7 @@ export function Process({ locale }: { locale: Locale }) {
   const { phases } = t.process;
 
   return (
-    <Section id="cara-kerja" headingId="process-heading">
+    <Section id="cara-kerja" headingId="process-heading" objectX={-0.55}>
       <SectionHeader
         badge={t.process.badge}
         heading={t.process.heading}

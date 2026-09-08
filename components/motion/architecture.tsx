@@ -1,10 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import type { Locale } from "@/content/i18n";
-import { registerScrollTrigger } from "@/lib/motion";
 
 const Scene = dynamic(
   () => import("./architecture-scene").then((m) => m.ArchitectureScene),
@@ -22,14 +21,13 @@ const MIN_WIDTH = 768;
  * canvas that already downloaded three.js. That is also what protects the
  * mobile Lighthouse budget: the phone never pays for this.
  *
- * The travel is scrubbed, not pinned. Pinning was the expensive and fragile
- * half of the docking billboard this replaces: a pin rewrites the document
- * flow and can strand the layout on a mid-scroll resize. A transform-only
- * scrub cannot.
+ * Task 10b mounts this once, at the page level, as a fixed layer that persists
+ * down the page instead of a hero object that exits on scroll — see
+ * `ArchitectureScene` for the per-section choreography and the perf budget
+ * that comes with a layer that can no longer rely on an off-screen pause.
  */
 export function Architecture({ locale }: { locale: Locale }) {
   const [enabled, setEnabled] = useState(false);
-  const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const wide = window.matchMedia(`(min-width: ${MIN_WIDTH}px)`);
@@ -46,64 +44,11 @@ export function Architecture({ locale }: { locale: Locale }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!enabled) return;
-    const el = container.current;
-    if (!el) return;
-
-    // The billboard itself is the trigger, not the canvas: the canvas is
-    // transformed by this tween, and measuring a moving element is how a
-    // trigger ends up chasing its own animation.
-    const header = el.closest("header");
-    if (!header) return;
-
-    let ctx: { revert: () => void } | undefined;
-    let cancelled = false;
-    let onResize: (() => void) | undefined;
-
-    void registerScrollTrigger().then(async (gsap) => {
-      if (cancelled || !gsap) return;
-      const { ScrollTrigger } = await import("gsap/ScrollTrigger");
-      if (cancelled) return;
-
-      ctx = gsap.context(() => {
-        gsap.to(el, {
-          // Right to left, receding, gone before the first rail. Transform and
-          // opacity only — nothing here can move the page or add to CLS.
-          xPercent: -55,
-          scale: 0.75,
-          opacity: 0,
-          ease: "none",
-          scrollTrigger: {
-            trigger: header,
-            start: "top top",
-            end: "bottom top",
-            scrub: 0.9,
-          },
-        });
-      }, el);
-
-      // ScrollTrigger caches element positions at creation. The hero is sized
-      // in svh, so a window resize changes where this trigger should start and
-      // end; the cached measurements have to be dropped.
-      onResize = () => ScrollTrigger.refresh();
-      window.addEventListener("resize", onResize);
-    });
-
-    return () => {
-      cancelled = true;
-      if (onResize) window.removeEventListener("resize", onResize);
-      ctx?.revert();
-    };
-  }, [enabled]);
-
   if (!enabled) return null;
 
   return (
-    <div ref={container} className="size-full will-change-transform">
-      <Suspense fallback={null}>
-        <Scene locale={locale} />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <Scene locale={locale} />
+    </Suspense>
   );
 }
