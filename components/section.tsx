@@ -68,36 +68,47 @@ export function Section({
  * as light thrown by something in the frame. Behind the hero machine and under
  * the product footage it has a source. On a panel of pure text it is decoration,
  * and four identical glows across one page is wallpaper.
+ *
+ * `translucent` is also a prop, not a default, and it is deliberately opt-in.
+ * `DarkPanel` has two call sites — About and Contact — and only About needs
+ * this: it sits at `objectX=0.55`, where the fixed architecture layer
+ * (Task 10b) is supposed to be visible, and a fully opaque panel hid it
+ * completely (checked by screenshot: even `bg-background/96` still showed
+ * nothing through the panel, because the layer itself renders at 16-30%
+ * opacity to begin with — two multiplied dampenings compound to near zero,
+ * so `/80` is what it actually took to register). Contact sits at
+ * `objectX=0`, which fades the layer to fully transparent in steady state, so
+ * it has no need for this and keeps the plain opaque background — a shared
+ * component defaulting to what only one caller needs is how the next caller
+ * gets a surprise, so this is a prop each call site opts into rather than a
+ * change to what `DarkPanel` does by default.
  */
 export function DarkPanel({
   children,
   glow = true,
+  translucent = false,
   className,
 }: {
   children: React.ReactNode;
   glow?: boolean;
+  /** See the comment above — opt in only where a fixed layer needs to show
+   * through and the section's pose never fades it to zero. */
+  translucent?: boolean;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        // Task 10b brought the architecture layer back as a fixed object behind
-        // every section, including About, which wears this panel. Fully opaque
-        // (the choice made when the node field it used to read through was
-        // removed) hid it completely — a screenshot check at /96 still showed
-        // nothing through the panel, because the layer itself only sits at
-        // 16% opacity to begin with; two multiplied dampenings compound to
-        // near zero. `/80` is what actually let it register.
-        //
-        // This is safe for body copy specifically because this panel's own
-        // background and the page background behind it are the *same*
-        // `--background` token — the panel isn't blending toward some
-        // brighter colour as it thins, it's revealing more of an
+        // Opaque by default. This is safe to thin for the caller that opts in
+        // because this panel's own background and the page background behind
+        // it are the *same* `--background` token — thinning it isn't blending
+        // toward some brighter colour, it's revealing more of an
         // already-near-black layer. Text contrast is set by `--foreground` on
-        // `--background`  regardless of the opacity here; only underneath the
+        // `--background` regardless of the opacity here; only underneath the
         // rare label plate that lands behind a line of body text does that
-        // change; nothing in About lands one there.
-        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background/80 text-foreground",
+        // change, and nothing in About lands one there.
+        "relative overflow-hidden rounded-[1.5rem] border border-border text-foreground",
+        translucent ? "bg-background/80" : "bg-background",
         "px-6 py-16 md:rounded-[2rem] md:px-10 md:py-20 lg:px-14",
         className,
       )}

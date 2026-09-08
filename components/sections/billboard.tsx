@@ -37,6 +37,25 @@ import billboardPoster from "@/public/image/capture-optigain.webp";
  * context: the frame (more negative) paints first, the fixed layer paints
  * above it, and this section's own text — never positioned, so it paints
  * above any negative z-index regardless — stays on top of both.
+ *
+ * CONSTRAINT for whoever edits this header next: nothing inside it may set a
+ * `z-index`, or anything else that establishes a stacking context of its own
+ * (`opacity` below 1, a `transform`, a `filter`, `isolation: isolate`,
+ * `will-change` naming one of those, `contain: layout`/`paint`). Today
+ * nothing here does — `<header>` is `relative` with no `z-index`, and every
+ * descendant is either unpositioned text or `#billboard-frame` at its
+ * explicit `-z-20` — which is why the ordering above holds, but it is a fact
+ * about the current markup, not something enforced. The moment one
+ * descendant creates a stacking context (a sticky badge, a hover overlay,
+ * anything with its own `z-index`), that element and everything inside it
+ * escapes the comparison above entirely and gets compared against the page's
+ * OTHER positioned elements (the fixed layer at `-z-10`, `SiteNav` at
+ * `z-50`) using its own number, silently landing in front of or behind the
+ * wrong thing with no error and no visual cue until someone notices. If a
+ * future change genuinely needs a stacking context in here, re-introduce
+ * `isolate` deliberately and re-verify by screenshot that the architecture
+ * object is still visible through the hero — don't assume the current
+ * ordering still holds.
  */
 export function Billboard({ locale }: { locale: Locale }) {
   const t = copy[locale];

@@ -398,6 +398,13 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
     let rafHandle = 0;
     let scrollScheduled = false;
     let lastTick = performance.now();
+    // `document.fonts.ready` is the one async callback here that can resolve
+    // after this effect has already cleaned up (fonts loading slower than a
+    // fast unmount, e.g. a locale switch). Nothing else needs this guard —
+    // the interval and the DOM listeners are removed synchronously below —
+    // but a bare `.then(recomputeAndInvalidate)` would otherwise run against
+    // a stale `invalidateRef` on an unmounted component.
+    let cancelled = false;
 
     const applyOpacity = (dt: number) => {
       const el = host.current;
@@ -445,14 +452,21 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
     // once layout has actually settled catches a section boundary that moved
     // out from under the first, early measurement.
     window.addEventListener("load", recomputeAndInvalidate);
-    void document.fonts?.ready?.then(recomputeAndInvalidate);
+    void document.fonts?.ready?.then(() => {
+      if (cancelled) return;
+      recomputeAndInvalidate();
+    });
 
     return () => {
+      cancelled = true;
       window.clearInterval(interval);
       window.removeEventListener("scroll", onScrollOrResize);
       window.removeEventListener("resize", onScrollOrResize);
       window.removeEventListener("load", recomputeAndInvalidate);
       if (rafHandle) cancelAnimationFrame(rafHandle);
+      // Belt and braces alongside `cancelled`: nothing should call through a
+      // ref pointing at a store this component no longer owns.
+      invalidateRef.current = null;
     };
   }, []);
 

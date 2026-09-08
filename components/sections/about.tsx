@@ -78,7 +78,7 @@ export function About({ locale }: { locale: Locale }) {
       {/* The client marks stay out on the page surface. Inside the panel they
           would pick up the dark-mode white plates, and the full-colour logos on
           white is the arrangement already signed off. */}
-      <DarkPanel glow={false} className="mt-16 md:mt-24">
+      <DarkPanel glow={false} translucent className="mt-16 md:mt-24">
         <SectionHeader
           badge={t.about.badge}
           heading={t.about.heading}
