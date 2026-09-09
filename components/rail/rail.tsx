@@ -18,7 +18,6 @@ export function Rail({
   title,
   titleId,
   labels,
-  objectX,
   children,
   className,
 }: {
@@ -26,12 +25,6 @@ export function Rail({
   title: string;
   titleId: string;
   labels: { prev: string; next: string };
-  /**
-   * Where this rail wants the fixed architecture layer, -1 (left) to 1
-   * (right). See `Section`'s `objectX` for the mechanism — this is the same
-   * `data-object-x` contract on a `<section>` that isn't built with `Section`.
-   */
-  objectX?: number;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -41,13 +34,9 @@ export function Rail({
     <section
       id={id}
       aria-labelledby={titleId}
-      data-object-x={objectX}
       className={cn("scroll-mt-24 py-10 md:py-14", className)}
     >
-      {/* z-30: elevated above the fixed architecture layer's z-20 (Task 10c) —
-          the rail title and its prev/next controls are text and controls,
-          not the section's own background. */}
-      <div className="relative z-30 mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6">
+      <div className="mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6">
         <h2
           id={titleId}
           className="font-heading text-[clamp(1.125rem,2vw,1.5rem)] font-semibold tracking-[-0.02em]"

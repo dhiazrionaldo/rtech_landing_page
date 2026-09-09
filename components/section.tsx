@@ -4,32 +4,15 @@ import { cn } from "@/lib/utils";
 /**
  * Section shell. The page stays one continuous surface — no background change
  * between sections — so structure has to come from spacing and hairlines.
- *
- * This wrapper is deliberately NOT given a z-index above the fixed
- * architecture layer (`z-20`, Task 10c). Elevating the whole section would
- * carry every card and panel inside it up as one block, which would hide the
- * object behind them exactly the way the old `-z-10` hid it behind
- * everything — the opposite of this task. Instead, only the actual
- * text-bearing pieces (`SectionHeader` below, `DarkPanel`'s content wrapper,
- * every card) carry their own `z-30`, so the object stays visible in the
- * space around and behind them.
  */
 export function Section({
   id,
   headingId,
-  objectX,
   children,
   className,
 }: {
   id?: string;
   headingId: string;
-  /**
-   * Where this section wants the fixed architecture layer, -1 (left) to 1
-   * (right). Rendered as `data-object-x` — the scene reads every one of these
-   * on scroll and eases toward whichever sits nearest the viewport centre.
-   * Omit on a section that shouldn't be a choreography stop.
-   */
-  objectX?: number;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -37,7 +20,6 @@ export function Section({
     <section
       id={id}
       aria-labelledby={headingId}
-      data-object-x={objectX}
       className={cn("scroll-mt-24 px-3 py-20 md:px-6 md:py-28", className)}
     >
       <div className="mx-auto w-full max-w-[1400px]">{children}</div>
@@ -58,10 +40,6 @@ export function Section({
  *
  * The label is `sticky` on large screens, so on a tall section it stays beside
  * the content it names. That is a small thing that reads as considered.
- *
- * Carries `z-30` (Task 10c) for the same reason `Billboard`'s copy block
- * does: it is text, sitting in a `Section` wrapper that is deliberately not
- * elevated, so it needs its own stacking position above the object's `z-20`.
  */
 /**
  * The black rounded panel. Three sections wear it now — about, products, and
@@ -81,56 +59,20 @@ export function Section({
  * as light thrown by something in the frame. Behind the hero machine and under
  * the product footage it has a source. On a panel of pure text it is decoration,
  * and four identical glows across one page is wallpaper.
- *
- * `translucent` is also a prop, not a default, and it is deliberately opt-in.
- * `DarkPanel` has two call sites — About and Contact — and only About needs
- * this: it sits at `objectX=0.55`. Under Task 10b, when the architecture
- * layer sat behind the page at 16-30% opacity, an opaque panel hid it
- * completely and `/80` was what it took to let it show through. Task 10c
- * moves the object in FRONT of this panel instead (see the z-layering note
- * below), so the panel's own opacity no longer determines whether the object
- * is visible there — it always is, because it now paints on top regardless of
- * what sits underneath. `translucent` is left as a prop rather than removed:
- * it is still a legitimate opacity choice for About's panel, just no longer
- * the mechanism that makes the object show through.
- *
- * ## Z-layering (Task 10c)
- *
- * The fixed architecture layer moved to `z-20` (see `app/[locale]/page.tsx`).
- * This panel's own background — the div below, with its border and optional
- * glow — is deliberately left unelevated, so the object paints in front of
- * it: that is what "above DarkPanel" in the brief means in practice. The
- * `children` wrapper carries `z-30` instead of a bare `relative`, so
- * everything rendered inside a `DarkPanel` (a `SectionHeader`, the mission/
- * vision pull-quotes, Contact's CTA and detail grid) stays elevated above the
- * object and reads exactly as it did before this task.
  */
 export function DarkPanel({
   children,
   glow = true,
-  translucent = false,
   className,
 }: {
   children: React.ReactNode;
   glow?: boolean;
-  /** See the comment above — an opacity choice for the panel's own surface,
-   * independent of the object's z-layering since Task 10c. */
-  translucent?: boolean;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        // Opaque by default. This is safe to thin for the caller that opts in
-        // because this panel's own background and the page background behind
-        // it are the *same* `--background` token — thinning it isn't blending
-        // toward some brighter colour, it's revealing more of an
-        // already-near-black layer. Text contrast is set by `--foreground` on
-        // `--background` regardless of the opacity here; only underneath the
-        // rare label plate that lands behind a line of body text does that
-        // change, and nothing in About lands one there.
-        "relative overflow-hidden rounded-[1.5rem] border border-border text-foreground",
-        translucent ? "bg-background/80" : "bg-background",
+        "relative overflow-hidden rounded-[1.5rem] border border-border bg-background text-foreground",
         "px-6 py-16 md:rounded-[2rem] md:px-10 md:py-20 lg:px-14",
         className,
       )}
@@ -138,7 +80,7 @@ export function DarkPanel({
       {glow ? (
         <div aria-hidden="true" className="media-glow absolute inset-0" />
       ) : null}
-      <div className="relative z-30">{children}</div>
+      <div className="relative">{children}</div>
     </div>
   );
 }
@@ -162,7 +104,7 @@ export function SectionHeader({
   const hasSideColumn = Boolean(body || aside);
 
   return (
-    <div className={cn("relative z-30", className)}>
+    <div className={className}>
       {/* Scale marker: a short heavy segment against a hairline, the way a
           gauge face is ruled. Structure, not ornament. */}
       <div aria-hidden="true" className="flex h-px w-full">

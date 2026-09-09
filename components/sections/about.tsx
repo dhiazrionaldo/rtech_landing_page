@@ -33,13 +33,10 @@ export function About({ locale }: { locale: Locale }) {
   const t = copy[locale];
 
   return (
-    <Section id="tentang" headingId="about-heading" objectX={0.55}>
+    <Section id="tentang" headingId="about-heading">
       {/* Centred, unruled, and on the original spacing — the client asked for
-          this arrangement back after seeing it as a left-hung ruled band.
-          z-30: elevated above the fixed architecture layer's z-20 (Task
-          10c) — this row sits directly in Section's unelevated wrapper, not
-          inside DarkPanel, so it needs its own stacking position. */}
-      <div className="relative z-30 flex flex-col items-center gap-6">
+          this arrangement back after seeing it as a left-hung ruled band. */}
+      <div className="flex flex-col items-center gap-6">
         <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
           {t.clients.label}
         </p>
@@ -93,7 +90,7 @@ export function About({ locale }: { locale: Locale }) {
       {/* The client marks stay out on the page surface. Inside the panel they
           would pick up the dark-mode white plates, and the full-colour logos on
           white is the arrangement already signed off. */}
-      <DarkPanel glow={false} translucent className="mt-16 md:mt-24">
+      <DarkPanel glow={false} className="mt-16 md:mt-24">
         <SectionHeader
           badge={t.about.badge}
           heading={t.about.heading}
@@ -108,12 +105,12 @@ export function About({ locale }: { locale: Locale }) {
             changed while it was out — CLAUDE.md forbids rewording the
             deck-verbatim copy, so it was only ever a rendering change.
 
-            Set as two ruled pull-quotes rather than the original two cards. On
-            a translucent panel sitting over the node field, a card is a second
-            opaque surface inside an already-layered stack; a hairline rule and
-            a hanging indent give the pair the same structure without adding
-            another box. The rules also line the two statements up on a shared
-            left edge, which is the comparison the section is actually making.
+            Set as two ruled pull-quotes rather than the original two cards. A
+            card is a second opaque surface inside an already-panelled block;
+            a hairline rule and a hanging indent give the pair the same
+            structure without adding another box. The rules also line the two
+            statements up on a shared left edge, which is the comparison the
+            section is actually making.
 
             Typography note kept from the earlier pass: these were once set in
             the display face (Archivo) at 23px with tight tracking. Archivo is a

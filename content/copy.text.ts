@@ -127,10 +127,12 @@ type Dict = {
     subline: string;
     mediaDescription: string;
     /**
-     * The 3D object in the hero is decorative and its canvas is aria-hidden, so
-     * what it depicts has to exist as crawlable text. This is that text.
+     * The Spline scene in the hero's right column (Task 10e, replacing the
+     * three.js architecture diagram) is decorative and its canvas is
+     * aria-hidden, so what it depicts has to exist as crawlable text. This is
+     * that text.
      */
-    architectureDescription: string;
+    sceneDescription: string;
   };
   rails: {
     capabilities: string;
@@ -428,8 +430,8 @@ export const copy: Record<Locale, Dict> = {
         "AI agent, aplikasi custom, dan integrasi ERP untuk industri Indonesia. Termasuk perangkat kerasnya.",
       mediaDescription:
         "Rekaman layar sistem yang dibangun RTECH INDO dan sudah berjalan: inspeksi kesiapan pemadam kebakaran, command centre HSSE, otomasi pemilihan vendor, dan simulator tanggap darurat kebakaran.",
-      architectureDescription:
-        "Diagram sistem yang kami bangun: ERP dan HRIS mengalir ke lapisan integrasi, yang menjalankan agen AI dan model prediksi, keduanya melapor ke tablet lapangan. Seluruh sistem berjalan di server milik klien sendiri.",
+      sceneDescription:
+        "Animasi 3D interaktif di samping judul, bersifat dekoratif.",
     },
     rails: {
       capabilities: "Yang kami bangun",
@@ -611,8 +613,8 @@ export const copy: Record<Locale, Dict> = {
         "AI agents, custom software and ERP integration for Indonesian industry. Plus the hardware it runs on.",
       mediaDescription:
         "Screen recordings of systems RTECH INDO built, running in production: digital fire-readiness inspection, an HSSE command centre, vendor selection automation, and a fire response simulator.",
-      architectureDescription:
-        "A diagram of a system we build: an ERP and an HRIS feeding an integration layer, which drives an AI agent and a forecasting model, both reporting to a field tablet. The whole system stands on a server inside the client's own building.",
+      sceneDescription:
+        "An interactive 3D animation beside the headline, decorative only.",
     },
     rails: {
       capabilities: "What we build",

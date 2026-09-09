@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import { CountUp } from "@/components/motion/count-up";
+import { HeroScene } from "@/components/motion/hero-scene";
 import { ActionButton } from "@/components/ui/action-button";
 import { clients, copy } from "@/content/copy";
 import type { Locale } from "@/content/i18n";
@@ -18,49 +19,37 @@ import billboardPoster from "@/public/image/capture-optigain.webp";
  * The poster is the LCP element and is the only `priority` image on the page.
  * The showreel video is added in Task 17 and is never the LCP element.
  *
- * The architecture object no longer lives here — Task 10b made it a fixed
- * layer mounted once in `app/[locale]/page.tsx`, behind every section, that
- * eases left or right per section. `data-object-x="0.55"` below is this
- * section's vote in that choreography: right, same side the object used to
- * occupy when it lived inside this frame.
+ * ## Two-column hero (Task 10e)
  *
- * That move meant `isolate` had to come off this header, and it still has to
- * stay off after Task 10c. `isolate` existed to keep `#billboard-frame`'s
- * negative z-index from leaking into the rest of the page — the right job
- * when the object was a child of this frame. Isolating this header now would
- * seal it into one atomic stacking unit, and that unit would be compared
- * against the object and the nav using nothing but the header's own
- * (non-existent) z-index — silently losing to `SiteNav`'s `z-50` in ways
- * unrelated to what is inside it, or winning against the object regardless of
- * the object's z, whichever way `auto` happens to resolve. Leaving it off
- * keeps every descendant's own z-index meaningful in the shared, page-root
- * stacking context.
+ * Above `lg` the copy block above sits in a grid beside a right column that
+ * holds `HeroScene`, a Spline scene replacing the three.js architecture
+ * object that used to live here (Task 10b–10c). The client asked for one
+ * WebGL runtime on the page, not two, and chose Spline over three.js/R3F.
+ * The two columns are a CSS grid with an explicit track for the object
+ * column, so they never overlap regardless of how much copy the left column
+ * carries. Below `lg`, and under `prefers-reduced-motion: reduce`,
+ * `HeroScene` does not render at all — see that component for the gate,
+ * which runs before the Spline runtime is ever requested, not after.
  *
- * ## Z-layering (Task 10c)
+ * The poster below stays the full-bleed background behind both columns, keeps
+ * `priority`, and remains the LCP element regardless of whether the scene has
+ * loaded — a hosted Spline scene must never become the largest contentful
+ * paint on this page.
  *
- * The architecture layer moved from `-z-10` (behind everything) to `z-20`
- * (in front of everything without its own z-index) — see the note in
- * `app/[locale]/page.tsx`. `#billboard-frame` stays at its explicit `-z-20`:
- * still behind the object either way, negative or not.
+ * ## Stacking
  *
- * The hero copy below (`mx-auto w-full max-w-[1400px] ...`) now carries an
- * explicit `relative z-30` for the same reason every other section's text
- * does: without it, the headline, subline, buttons and stat row have no
- * z-index of their own and would lose to the object's `z-20`. `z-30` sits
- * below `SiteNav`'s `z-50` with room to spare.
- *
- * CONSTRAINT for whoever edits this header next: nothing inside it may set
- * `isolation: isolate`, or anything else that would seal a descendant off
- * from this shared stacking context and make its z-index stop meaning what
- * it says (a `contain: layout`/`paint` on an ancestor of the copy block would
- * do the same thing `isolate` would, for the same reason). Today the only two
- * positioned things in here are `#billboard-frame` at `-z-20` and the copy
- * block at `z-30`, and nothing between the header and the page root
- * intercepts either. If a future change adds a third positioned descendant,
- * give it a z-index that is deliberate against this scale (`z-20` object /
- * `z-30` text / `z-50` nav) and re-verify by screenshot that the object is
- * still visible and the headline still crisp — don't assume the current
- * ordering still holds.
+ * `isolate` is back on this header. Task 10b/10c had removed it because a
+ * page-wide, positive-z-index architecture layer used to sit in front of
+ * every section, and isolating this header would have sealed `#billboard-
+ * frame`'s `-z-20` background away from that comparison in ways that did not
+ * track the object's own z-index. That page-wide layer is gone (Task 10e):
+ * the only positioned descendants inside this header now are `#billboard-
+ * frame` at `-z-20` and, above `lg`, `HeroScene`'s own scene box, which
+ * carries no z-index of its own and simply sits in normal grid flow above
+ * the negatively-stacked poster. Nothing outside this header needs to
+ * compare against anything inside it any more, so `isolate` is the correct,
+ * boring choice again: it keeps `-z-20` from ever being able to leak past
+ * this header's own boundary, full stop.
  */
 export function Billboard({ locale }: { locale: Locale }) {
   const t = copy[locale];
@@ -68,8 +57,7 @@ export function Billboard({ locale }: { locale: Locale }) {
 
   return (
     <header
-      data-object-x="0.55"
-      className="relative flex min-h-[min(94svh,960px)] flex-col justify-end overflow-hidden"
+      className="relative isolate flex min-h-[min(94svh,960px)] flex-col justify-end overflow-hidden"
     >
       <div
         id="billboard-frame"
@@ -98,70 +86,84 @@ export function Billboard({ locale }: { locale: Locale }) {
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/85 to-transparent" />
       </div>
 
-      <div className="relative z-30 mx-auto w-full max-w-[1400px] px-3 pb-10 pt-28 md:px-6 md:pb-14">
-        <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
-          {t.hero.eyebrow}
-        </p>
+      <div className="relative mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-10 px-3 pb-10 pt-28 md:px-6 md:pb-14 lg:grid-cols-[minmax(0,1fr)_440px] lg:items-end lg:gap-16">
+        <div className="min-w-0">
+          <p className="font-mono text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
+            {t.hero.eyebrow}
+          </p>
 
-        <h1
-          className="mt-4 max-w-[16ch] font-heading text-[clamp(2.75rem,7vw,6.5rem)] font-bold leading-[0.92] tracking-[-0.04em]"
-          style={{ fontVariationSettings: "'wdth' 88" }}
-        >
-          {t.hero.headline}
-        </h1>
+          <h1
+            className="mt-4 max-w-[16ch] font-heading text-[clamp(2.75rem,7vw,6.5rem)] font-bold leading-[0.92] tracking-[-0.04em]"
+            style={{ fontVariationSettings: "'wdth' 88" }}
+          >
+            {t.hero.headline}
+          </h1>
 
-        <p className="mt-5 max-w-[52ch] text-[0.9375rem] leading-[1.65] text-muted-foreground md:text-base">
-          {t.hero.subline}
-        </p>
+          <p className="mt-5 max-w-[52ch] text-[0.9375rem] leading-[1.65] text-muted-foreground md:text-base">
+            {t.hero.subline}
+          </p>
 
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <ActionButton href={href}>{t.cta.primary}</ActionButton>
-          <ActionButton href="#produk" variant="outline">
-            {t.cta.secondary}
-          </ActionButton>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <ActionButton href={href}>{t.cta.primary}</ActionButton>
+            <ActionButton href="#produk" variant="outline">
+              {t.cta.secondary}
+            </ActionButton>
+          </div>
+
+          <div className="mt-12 flex flex-wrap items-end gap-x-10 gap-y-6 border-t border-border pt-6">
+            <dl className="flex flex-wrap items-end gap-x-10 gap-y-6">
+              {t.stats.map((stat) => (
+                <div key={stat.label} className="flex flex-col gap-1">
+                  <dt className="order-2 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground">
+                    {stat.label}
+                  </dt>
+                  <dd className="order-1 font-mono text-2xl tabular-nums text-metric md:text-3xl">
+                    {stat.countUp ? <CountUp value={Number(stat.value)} /> : stat.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <ul className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-3">
+              {clients.map((client) => (
+                <li key={client.name}>
+                  {client.logo ? (
+                    <span className="inline-flex items-center rounded-sm bg-surface-brand px-2.5 py-1.5">
+                      <Image
+                        src={client.logo}
+                        alt={client.wordmark}
+                        height={client.height ?? 20}
+                        className="h-4 w-auto md:h-5"
+                      />
+                    </span>
+                  ) : (
+                    <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
+                      {client.wordmark}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-end gap-x-10 gap-y-6 border-t border-border pt-6">
-          <dl className="flex flex-wrap items-end gap-x-10 gap-y-6">
-            {t.stats.map((stat) => (
-              <div key={stat.label} className="flex flex-col gap-1">
-                <dt className="order-2 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground">
-                  {stat.label}
-                </dt>
-                <dd className="order-1 font-mono text-2xl tabular-nums text-metric md:text-3xl">
-                  {stat.countUp ? <CountUp value={Number(stat.value)} /> : stat.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          <ul className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-3">
-            {clients.map((client) => (
-              <li key={client.name}>
-                {client.logo ? (
-                  <span className="inline-flex items-center rounded-sm bg-surface-brand px-2.5 py-1.5">
-                    <Image
-                      src={client.logo}
-                      alt={client.wordmark}
-                      height={client.height ?? 20}
-                      className="h-4 w-auto md:h-5"
-                    />
-                  </span>
-                ) : (
-                  <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
-                    {client.wordmark}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+        {/* The object column. Fixed height rather than stretching to match the
+            content column: the content column's height depends on how much
+            copy renders, and a scene that grows and shrinks with word count
+            would never be predictable to compose against. `hidden lg:block`
+            keeps it out of the DOM's rendered box below `lg` even before
+            `HeroScene`'s own JS gate would have kept it empty — belt and
+            braces with the "no WebGL below 1024px" rule, not a duplicate of
+            it. */}
+        <div className="hidden lg:block">
+          <HeroScene className="relative h-[380px] w-full overflow-hidden rounded-[1.5rem] border border-border/60 xl:h-[460px]" />
         </div>
       </div>
 
       {/* The billboard media is decorative, so what it shows exists as text.
-          The architecture object's own sr-only description now lives with it
-          at the page level — see app/[locale]/page.tsx. */}
+          The Spline scene in the right column gets the same treatment below. */}
       <p className="sr-only">{t.hero.mediaDescription}</p>
+      <p className="sr-only">{t.hero.sceneDescription}</p>
     </header>
   );
 }

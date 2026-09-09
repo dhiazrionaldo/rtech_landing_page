@@ -37,17 +37,13 @@ export function CapabilitiesRail({ locale }: { locale: Locale }) {
       title={t.rails.capabilities}
       titleId="capabilities-heading"
       labels={{ prev: t.rails.prev, next: t.rails.next }}
-      objectX={-0.55}
     >
       {capabilities[locale].map(({ id, name, line, body, icon }) => {
         const Icon = ICONS[icon];
         return (
         <li
           key={id}
-          // z-30: elevated above the fixed architecture layer's z-20 (Task
-          // 10c), same reasoning as `Card` in components/ui/card.tsx — the
-          // whole card, not just its text, since its fill is a small surface.
-          className={`relative z-30 flex shrink-0 snap-start flex-col rounded-2xl border border-border bg-card p-6 ${RAIL_CARD_WIDTH}`}
+          className={`flex shrink-0 snap-start flex-col rounded-2xl border border-border bg-card p-6 ${RAIL_CARD_WIDTH}`}
         >
           <Icon aria-hidden="true" className="size-5 text-metric" />
           <h3 className="mt-5 font-heading text-lg font-semibold tracking-[-0.01em]">

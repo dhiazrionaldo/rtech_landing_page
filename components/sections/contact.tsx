@@ -42,7 +42,7 @@ export function Contact({ locale }: { locale: Locale }) {
   const href = isPending(t.cta.href) ? undefined : t.cta.href;
 
   return (
-    <Section id="kontak" headingId="contact-heading" objectX={0}>
+    <Section id="kontak" headingId="contact-heading">
       <DarkPanel className="md:py-24">
         <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-20">
           <div className="flex flex-col items-start gap-6">

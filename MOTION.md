@@ -26,14 +26,12 @@ page against the performance budget.
   motion component mount rather than in the initial bundle.
 - **One canvas.** The node field and brain field were removed on 2026-09-07:
   CLAUDE.md bans particle fields standing in for a neural network and
-  wireframe brains by name. The budget they freed pays for the labelled
-  architecture object below (trigger 7) and the hover-preview rails. That
-  object is the one exception to "no canvas" in this file, and CLAUDE.md's "one
-  orchestrated 3D moment" rule is under some tension with it now that it is a
-  fixed layer present through every section rather than a single hero beat —
-  see trigger 7 for the mitigations (nothing else on the page gains motion)
-  and why the client asked for it anyway. Task 10c (below) replaced the
-  opacity-based mitigation with a DOM z-index one.
+  wireframe brains by name. Their budget paid for a labelled three.js
+  architecture object (Task 10b/10c) that lived here through 2026-09-08.
+  Task 10e (2026-09-09) removed that object entirely — the client chose a
+  Spline scene instead of running two WebGL runtimes on one page — and it is
+  now a hero-only element in `Billboard`'s right column rather than a
+  page-wide fixed layer. See trigger 7 below.
 
 ## Triggers
 
@@ -45,7 +43,7 @@ page against the performance budget.
 | 4 | Process rail | `ScrubRail` in `process.tsx` | `top 75%` | `center center` | **0.6** | no | `scaleX 0→1`, origin left |
 | ~~5~~ | ~~Contact reassurance cards~~ | removed | — | — | — | — | The three cards are one static line of copy now. See the note in `content/copy.ts` on why three claims about our own candour was a formula. |
 | 6 | Stat counters (`3`, `10`) | `CountUp` in `hero.tsx` | `top 92%` | — | no | yes | integer 0→value over 1.1s |
-| 7 | Fixed architecture layer | `ArchitectureScene` in `architecture-scene.tsx` | n/a — not a ScrollTrigger | n/a | continuous, damped | no | group `position.x` damped toward the nearest section's pose, layer `opacity` cross-fades the same way |
+| 7 | Hero Spline scene | `HeroScene` in `hero-scene.tsx` | n/a — not a ScrollTrigger, no scroll choreography | n/a | n/a | n/a | mounts once, at `lg` and up, under `prefers-reduced-motion: no-preference`; the scene itself animates under Spline's own control, not GSAP's |
 | 8 | Rail cards (all three rails) | `Reveal` in `rail.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 16→0`, stagger 0.06s |
 
 Trigger 4 is the only scrubbed **GSAP** animation on the page, and deliberately
@@ -58,174 +56,54 @@ year spinning like an odometer on a page whose argument is "we do not inflate
 numbers" is the wrong note. The flag lives on the stat data as `countUp` in
 `content/copy.ts`.
 
-Trigger 7 is not a `ScrollTrigger` at all — CLAUDE.md asks for "a simple damped
-lerp, not a GSAP tween per section" here, because the pose is a standing
-position (which section currently owns the viewport centre), not a progress
-value tied to scroll distance the way trigger 4's rail is. Mechanism:
+Trigger 7 is intentionally not a `ScrollTrigger`, a scroll choreography, or
+even a scroll listener — it is a hero-only element that mounts once and lets
+Spline drive whatever motion the scene itself contains.
 
-- Every section that participates declares its pose with `data-object-x`
-  (`-1`..`1`, negative = left): `Billboard`'s `<header>` directly, `Section`
-  and `Rail` via an `objectX` prop. Billboard `0.55`, Capabilities rail `-0.55`,
-  Work rail `0.55`, Industries rail `-0.55`, About `0.55`, Process `-0.55`,
-  Contact `0` (which also reads as "fade the object to 0 opacity" — the CTA is
-  the moment there, not the object).
-- A `window` `scroll`/`resize` listener, rAF-throttled to once per animation
-  frame, reads every `[data-object-x]` element's `getBoundingClientRect()`,
-  picks whichever sits nearest the viewport's vertical centre, and writes its
-  pose into a ref. A `setInterval` tick capped at 20fps (`TICK_MS` in
-  `architecture-scene.tsx`) reads that ref every tick and damps the group's
-  `position.x` (via `three`'s `MathUtils.damp`, framerate-independent) and the
-  host `<div>`'s CSS `opacity` toward it. Both the scroll handler and the tick
-  call the R3F store's `invalidate()` — `frameloop="demand"`, so nothing
-  renders unless one of them asks it to.
-- The tick — and therefore all motion, including the edge pulses' own
-  `useFrame` — stops calling `invalidate()` entirely when
-  `document.visibilityState === "hidden"`.
-- Camera: `fov: 44`, `position: [0, -0.1, 11]`. Widened from the hero-only
-  version (`fov: 38`, `z: 9.6`) in the same change that widened the graph to
-  fourteen nodes — the frustum has to fit both the graph's own x -2.4..2.4
-  span with its outboard labels *and* the up to ~1.2-world-unit shift the
-  choreography adds on top, at both required test sizes. Verified by
-  screenshot at 1440×900 and 1024×768: every label clears the canvas edge at
-  both sizes (the previous agent's clipping defect, on `scada`/`extraction`,
-  is gone) and the plinth's "On-premise server" label sits fully on-canvas
-  above the client-logo row (the previous agent's second defect, also gone).
-- Node x-positions for `vision` (0.75→0.45) and `tablet` (-1.5→-1.7) were
-  nudged from the values in the task brief: at the brief's exact coordinates,
-  `vision`'s and `extraction`'s outboard label plates overlapped each other
-  (both tier 3, both pushed toward the same side), and so did `tablet`'s and
-  `command`'s (both tier 4). Screenshot-verified fix, not a shortened label.
+### Task 10e (2026-09-09) — Spline scene replaces the three.js architecture object
 
-### Task 10c (2026-09-08) — foreground layer, teal palette, 21 nodes, team block gone
+Client decision: the supplied Spline component replaces the three.js/R3F
+architecture diagram rather than run two WebGL runtimes on one page. This
+removed, in full, the mechanism the two paragraphs above used to describe in
+detail: the fixed page-wide layer mounted in `app/[locale]/page.tsx`, the
+`objectX` / `data-object-x` pose contract on `Section` and `Rail` (15
+call-site references), the `z-20` / `z-30` elevation split it required on
+every text-bearing surface (26 references), `DarkPanel`'s `translucent` prop
+(7 references), `lib/token-color.ts` (the OKLCH-to-RGB resolver the R3F
+materials needed and nothing else used), and `content/architecture.ts` (the
+21-node/edge graph). All deleted, not archived — see git history for the
+pre-10e implementation and the Task 10c report for why it looked the way it
+did.
 
-Client feedback after seeing Task 10b live: "the nodes and brain is not
-clearly show, it should in front of and fixed also remove the who you'll
-work with is, and make it more AI nodes here the color also looks bad." Four
-changes, all in trigger 7's own files plus the team removal below.
+**What replaced it.** `HeroScene` (`components/motion/hero-scene.tsx`) gates
+a Spline scene (`components/ui/splite.tsx`, wrapping
+`@splinetool/react-spline`) the same way `Architecture` used to gate three.js:
+a `useState` flipped by a `matchMedia` check for width (now `1024px`/`lg`,
+matching the hero's own two-column breakpoint, not the old `768px`) and
+`prefers-reduced-motion`, checked *before* the dynamic import of the Spline
+module is requested — so a phone or a reduced-motion user never fetches the
+Spline runtime, the same guarantee the outgoing component made for
+three.js/R3F. It lives only inside `Billboard`'s right column now, not as a
+page-level fixed layer, so there is no section choreography to document: it
+mounts once, stays put, and unmounts with the hero the way any other hero
+element would.
 
-**Z-layering — the object moves to the foreground.** The fixed layer's
-wrapper in `app/[locale]/page.tsx` moved from `-z-10` (behind everything) to
-`z-20` (in front of any normal-flow content that carries no z-index of its
-own), still well clear of `SiteNav`'s `fixed z-50`. `z-21..49` is left empty
-on purpose — headroom for the chat dock a later task adds.
+`components/ui/spotlight.tsx` (also supplied, also adapted) sits over the
+scene column as a small pointer-tracking glow — see its own file header for
+the three fixes made to the supplied version: `motion/react` imports instead
+of a second copy of the same library under `framer-motion`, named event
+handlers instead of a listener-removal that never actually detached, and the
+teal ramp (`--chart-2`) instead of a hardcoded `zinc` gradient. `--primary`
+appears nowhere in either new component — orange stays on the CTA.
 
-Raising the canvas alone would have buried every word on the page behind it,
-so the other half of the change is an explicit `z-30` on every text-bearing
-surface: `Billboard`'s copy block, `SectionHeader`, `DarkPanel`'s content
-wrapper (its own background box stays unelevated, so the object still paints
-over the panel), `Card`, and the three rail-card shapes
-(`components/sections/capabilities-rail.tsx`, `components/rail/rail-card.tsx`,
-`components/sections/industries-rail.tsx`), plus each rail's title row and
-`Process`'s rail-marker row. `Section`'s own wrapper is deliberately **not**
-elevated — doing that would carry every card inside a section up as one
-block and hide the object behind it again, the opposite of the point.
-
-This works cleanly because the canvas draws almost nothing: `frameloop`
-notwithstanding, the WebGL clear alpha is 0 everywhere the diagram itself
-isn't, so a positive z-index only ever affects the pixels of an actual node,
-edge, pulse, or label plate — not a wash over the whole viewport. A soft
-opacity mask over the copy column (the brief's alternative mechanism) was
-not needed once the real text was given real DOM stacking.
-
-**Opacity.** `BASE_OPACITY`/`HERO_OPACITY` (16-30%) are gone, replaced by one
-`OBJECT_OPACITY = 0.92`. The old split existed because the layer sat behind
-body copy and needed a low ceiling to stay out of the way; Task 10c's
-z-elevation makes that unnecessary — legibility is now a stacking fact, not
-an opacity negotiation — so the object can run at near-full strength
-everywhere it's on screen. Contact's fade-to-0 (`data-object-x="0"`) is
-unchanged: the CTA is still the moment there.
-
-**Colour — full teal instrument palette**, replacing the near-white/grey
-scheme:
-
-| Element | Was | Now |
-|---|---|---|
-| Node geometry | `--foreground` | `--chart-1` |
-| Edges / plinth edging | `--border` | `--chart-3` |
-| Travelling pulses | `--chart-2` | `--chart-1` |
-| Labels | `--foreground` | `--foreground` (unchanged) |
-| Plinth fill / label plates | `--card` | `--card` (unchanged) |
-
-`--chart-1` (L 0.855, the brightest step of the ramp) is deliberate here —
-the client's complaint was literally that the object did not read clearly,
-and CLAUDE.md flags this same token as too light for *thin lines or small
-text on the white light-mode background*. That warning is about contrast
-against `oklch(1 0 0)`; this scene sits on the page's own dark surface (the
-billboard's dimmed poster, `DarkPanel`, or the plain dark `--background`
-behind a rail), so the comparison that actually matters is chart-1 against
-near-black, not chart-1 against white — and that contrast is high regardless
-of whether the geometry is filled or wireframe (the node octahedrons are
-wireframe; only the pulses are solid). Screenshot-verified: the wireframe
-reads clearly in both the hero and the rails. No `--primary` anywhere in the
-scene, unchanged.
-
-**21 nodes, all real.** Grown from 14 to 21 — the seven additions are project
-names already on this page, pulled from `expertise.sectors`, nothing
-invented: `hse-inspection`, `piping`, `warehouse`, `cargo`, `checklist`,
-`maintenance`, `sales`. All 21 keep a legible label; none were dropped. See
-`content/architecture.ts` for the full node/edge table and the note on why
-tier 4 is zigzagged across two y values (-0.3 / -0.9) rather than the
-brief's single flat -0.6 — the brief's own suggested spacing did not clear
-once these seven labels (up to 23 characters) were laid out at that density.
-
-Getting there needed one more mechanism: `wrapLabel` in
-`architecture-scene.tsx` breaks any label over 15 characters onto a second
-line, greedily, on a word boundary. Deterministic and precomputed rather than
-left to drei's own text reflow, for the same reason the file already
-computed single-line width by counting monospaced characters. This roughly
-halves the on-screen footprint of the longest labels (23 chars → an 11-13
-char widest line) and is applied to every label in the scene, not just the
-new ones — the pre-existing "Document reading" / "Integration layer" also
-wrap now, with no separate opt-in.
-
-Camera widened again to fit the wider tier: `fov: 44 → 47`,
-`camera.position.z: 11 → 11.6`, to give the new spread margin inside the
-frustum. See the task report for the screenshot verification.
-
-**Team block removed.** The client asked for "who you'll work with" to go.
-`components/sections/about.tsx` no longer renders the team block; `team` and
-`TeamMember` are gone from `content/copy.text.ts`; the `Person` JSON-LD (one
-per founder) and the `founder` field referencing it are gone from
-`components/seo/structured-data.tsx`. CLAUDE.md asks for a `Person` node per
-team member — this is a deliberate, client-directed removal of the content
-that schema described, not an oversight, and it ships in the same change
-that removes the content, so structured data never points at people who are
-no longer on the page.
-
-**Measured** (`npm run build && npm start`, Lighthouse, throttled, median of
-three, `http://localhost:3000/en`, 2026-09-08). Pre-Task-10c numbers, kept
-rather than re-run in the same pass — 21 nodes and a foreground z-index are
-both more expensive to draw and composite than 14 nodes at `-z-10`, so these
-figures should be treated as a floor, not a current reading:
-
-| | Mobile | Desktop |
-|---|---|---|
-| Performance | 90 | 77 |
-| LCP | 3.59s | 4.05s |
-| CLS | 0 | 0 |
-| TBT (INP lab proxy) | 87ms | 24ms |
-
-Mobile Performance (90) and CLS (0) meet the Step 7 gate. Mobile made zero
-network requests for three.js/R3F/GSAP across all three runs — confirmed by
-filtering the Lighthouse network-requests audit — so the fixed layer is not
-loading below 768px; the gate that matters for this task holds. Desktop TBT
-(24ms median, all three runs under 45ms) is far under the 200ms INP concern
-threshold, and a supplementary check — a scripted full-page scroll pass with a
-`PerformanceObserver` for long tasks — found zero tasks over 50ms *during* the
-simulated scroll; the one 203ms task recorded across the whole run landed
-before scrolling started, during initial hydration. Neither points at the
-choreography's scroll handler or 20fps tick as an INP risk.
-
-Both LCP figures (3.59s mobile, 4.05s desktop) sit above the 2.5s CLAUDE.md
-budget, and desktop Performance is noisy across runs (88 / 77 / 76). Neither
-is attributable to this task: the LCP element is the billboard poster image,
-untouched by Task 10b, and mobile never loads the architecture bundle at all.
-This reads as pre-existing local-server measurement noise (`next start` on a
-dev machine, no CDN/edge caching, other local processes competing for the
-same machine) rather than a regression — flagged rather than silently
-adjusted, per CLAUDE.md's "report contrast failures rather than quietly
-fixing them," which the same spirit applies to budget misses this task did
-not cause.
+**Known issue carried forward, not solved by this task:** the wired scene
+URL (`https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode`) is
+Spline's own public sample — an isometric robot. CLAUDE.md bans isometric
+robots by name and this exact scene is on thousands of other sites. It is
+wired as supplied so the integration is testable end to end; replacing it
+with a scene built for RTECH INDO is outstanding before launch. See the Task
+10e report for the measured cost (Spline runtime transfer size, scene file
+size, Lighthouse before/after).
 
 ## Non-scroll motion
 
