@@ -2797,6 +2797,132 @@ Commit as soon as the gates pass, then screenshot and amend. Agents in this run 
 
 ---
 
+### Task 10e: Replace the R3F architecture object with Spline
+
+Client decision: the Spline component replaces the three.js architecture object. One 3D runtime on the page, not two.
+
+This **supersedes Task 10d** (two-column hero via the R3F object). The two-column hero layout survives; what fills the right column changes.
+
+**Net effect: this removes four dependencies and adds two, and deletes ~1,400 lines.**
+
+---
+
+#### Part A — Add the Spline component, adapted
+
+Install exactly two packages. **Do NOT install `framer-motion`** — the project already has `motion@12.43.0`, which is Framer Motion v12 under its current name. Installing both ships two copies of the same library.
+
+```bash
+npm install @splinetool/react-spline @splinetool/runtime
+```
+
+**Create `components/ui/splite.tsx`** — as supplied, with one fix: the fallback references a `.loader` class that does not exist in `app/globals.css`, so it renders nothing. Replace it with a visible fallback built from existing tokens (a simple pulsing block or a mono label; no new CSS class, no new colour).
+
+**Create `components/ui/spotlight.tsx`** — as supplied, with four required changes:
+
+1. **Import from `motion/react`, not `framer-motion`.** `useSpring`, `useTransform`, `motion` and the `SpringOptions` type all come from `motion/react` in v12.
+2. **Fix the listener leak.** The supplied code adds anonymous `mouseenter`/`mouseleave` handlers then calls `removeEventListener` with *different* anonymous functions, so neither ever detaches. Hoist both to named handlers and remove those.
+3. **Tokens, not `zinc`.** `from-zinc-50 via-zinc-100 to-zinc-200` is a hardcoded ramp. Use existing tokens. `--foreground` for the light, or the teal ramp if it reads better against the black hero. **Never `--primary`** — orange belongs to the CTA alone.
+4. **Keep the parent mutation, but comment it.** The effect sets `parent.style.position` and `overflow` imperatively. That is how the component works; leave it, but say so in a comment so the next reader is not surprised by a component that reaches upward.
+
+**Do NOT create `components/ui/card.tsx`.** One already exists, deliberately not shadcn's, documented as such, and imported by `about.tsx` and `process.tsx`. Overwriting it reverts the card treatment across the page. Use the existing `Card`.
+
+#### Part B — Remove the R3F architecture object entirely
+
+Delete:
+
+```
+components/motion/architecture.tsx
+components/motion/architecture-scene.tsx
+content/architecture.ts
+content/architecture.test.ts
+lib/token-color.ts
+lib/token-color.test.ts
+public/fonts/ibm-plex-mono-500.ttf      (added only for drei's <Text>)
+```
+
+`lib/token-color.ts` is imported only by `architecture-scene.tsx` — verified. It goes with it.
+
+Remove the packages:
+
+```bash
+npm uninstall three @react-three/fiber @react-three/drei @types/three
+```
+
+Then remove the machinery that existed only to make a page-wide 3D overlay survivable. Grep before and after to prove each is gone:
+
+1. **`objectX` prop** on `Section` and `Rail`, and all 15 call-site references, plus `data-object-x`.
+2. **The `z-30` elevation split** — 26 references added so text could sit above the overlay. Return those elements to natural stacking. Leave the nav at `z-50`.
+3. **`DarkPanel`'s `translucent` prop** — 7 references. `DarkPanel` goes back to opaque only.
+4. **The billboard header's stacking-context CONSTRAINT comment.** Re-introduce `isolate` on the header if that is now correct, and replace the comment with what is actually true. Do not leave a comment describing a situation that no longer exists.
+5. **`hero.architectureDescription`** in `content/copy.text.ts` — it describes a diagram that no longer exists. Replace with an `sr-only` description of what the Spline scene actually shows (see Part C).
+
+Test count drops from 25 to 15 (6 architecture tests + 4 token-colour tests removed). That is expected — confirm the remaining 15 pass.
+
+#### Part C — The two-column hero
+
+The layout the client asked for before this change, now filled by Spline:
+
+```
++-------------------------+------------------------+
+| AI SYSTEMS ... SINCE 2018 |                      |
+| Operations that           |    [ Spline scene ]  |
+| do not stop.              |                      |
+| AI agents, custom soft... |                      |
+| [ Book a call ] [ See ]   |                      |
+| 2018   3   10             |                      |
+| PERTAMINA KPI PET ...     |                      |
++-------------------------+------------------------+
+       content column           object column
+              they never overlap
+```
+
+- Above `lg`, the billboard is a two-column grid. All existing hero content stays left; the Spline scene occupies the right column. **They must never overlap.**
+- Below `lg`, the scene does not render at all — gate it with a state check before the lazy import resolves, so a phone never downloads the Spline runtime.
+- Under `prefers-reduced-motion: reduce`, do not render it either.
+- **The billboard poster stays** the full-bleed background, keeps `priority`, and remains the LCP element. A hosted Spline scene must never become the LCP.
+- Add an `sr-only` description in both locales of what the scene depicts — the canvas is decorative, so whatever it communicates must exist as crawlable text. Write it to match the actual scene.
+
+#### Two things to report, not to solve
+
+1. **The scene URL is Spline's stock demo.** `https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode` is Spline's own sample robot scene. `CLAUDE.md` bans "isometric robots" by name, and a stock scene appears on thousands of sites. Wire it as supplied so the integration is testable, but flag prominently in your report that this needs replacing with RTECH's own scene before launch.
+2. **Measure and report the cost.** Record the Spline runtime's transfer size and the scene file's size from the Network panel, and the mobile and desktop Lighthouse numbers. Mobile should be unchanged (nothing loads there). If desktop degrades badly, say so — do not quietly accept it.
+
+---
+
+#### Gates
+
+- **Only two packages added, four removed.** No `framer-motion`.
+- No hardcoded colours anywhere in the new components. **No `--primary`** in the scene or the spotlight.
+- `components/ui/card.tsx` unchanged — verify with `git diff`.
+- Server Components by default; the two new files are `"use client"` as supplied.
+- Named exports. No `any`. No `@ts-ignore` without a comment. No `console.log`.
+- All four gates pass: `npm test` (15), `npm run typecheck`, `npm run lint`, `npm run build`. Lint 0 errors AND 0 warnings.
+
+#### Verify
+
+Confirm the dev server is up before trusting any curl — a dead server returns empty and every check reads as a false zero.
+
+```bash
+printf 'objectX gone:     '; grep -rc "objectX\|data-object-x" components app | grep -v ':0' || echo clean
+printf 'translucent gone: '; grep -rc "translucent" components | grep -v ':0' || echo clean
+printf 'r3f gone:         '; grep -rc "react-three\|from \"three\"" components app | grep -v ':0' || echo clean
+printf 'framer-motion:    '; grep -rc "framer-motion" components app | grep -v ':0' || echo clean
+printf 'h1 count:         '; curl -s http://localhost:3001/en | grep -o '<h1' | wc -l
+printf 'headline:         '; curl -s http://localhost:3001/en | grep -c "Operations that do not stop"
+printf 'opacity:0 leak:   '; curl -s http://localhost:3001/en | grep -c 'opacity:0'
+```
+
+Then screenshot on a cold load at 1440x900 and 1280x800:
+1. Are the two columns clearly separate, with zero overlap?
+2. Does the Spline scene load, and how long does it take?
+3. Scroll to the capabilities rail — do the rails have full width and their bleeding-card edge back?
+
+Commit as soon as the gates pass. Agents in this run have twice lost work to account rate limits.
+
+**PAUSE FOR REVIEW.**
+
+---
+
 # Phase 3 — Hover preview and the scoping concierge
 
 *(CLAUDE.md stage 4. Pause for review at the end of Task 16.)*
