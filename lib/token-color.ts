@@ -17,7 +17,24 @@ export function parseRgbString(value: string): [number, number, number] | null {
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
-/** Browser only. Returns white if the token cannot be resolved. */
+/**
+ * Browser only. Returns white if the token cannot be resolved.
+ *
+ * `parseRgbString`'s regex is `rgb()`/`rgba()`-shaped, but `getComputedStyle`
+ * does not always hand back that shape. Verified live (Task 10c fix round 1):
+ * on a browser wide enough gamut to represent our OKLCH tokens outside sRGB,
+ * `getComputedStyle` on the same element returns `lab(84.9 -48.15 -1.33)`
+ * for `--chart-1`, not an `rgb()` string at all — `parseRgbString` returns
+ * `null` for every token on that browser, and every colour in this file
+ * falls through to the canvas round-trip below on every call. That fallback
+ * is correct (canvas `fillStyle` accepts any CSS colour, including `lab()`,
+ * and `getImageData` always reads back sRGB), so colours still resolve
+ * correctly — this was checked and is not the cause of any rendering bug —
+ * but the `rgb()` fast path above is effectively dead code on such browsers,
+ * and the *only* thing keeping colours correct there is this canvas path.
+ * If this function is ever rewritten, keep the canvas fallback: it is not
+ * a fallback in practice, it is the primary path.
+ */
 export function resolveToken(token: string): [number, number, number] {
   const probe = document.createElement("span");
   probe.style.color = `var(${token})`;

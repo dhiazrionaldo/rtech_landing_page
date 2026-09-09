@@ -530,9 +530,23 @@ export function ArchitectureScene({ locale }: { locale: Locale }) {
       window.removeEventListener("resize", onScrollOrResize);
       window.removeEventListener("load", recomputeAndInvalidate);
       if (rafHandle) cancelAnimationFrame(rafHandle);
-      // Belt and braces alongside `cancelled`: nothing should call through a
-      // ref pointing at a store this component no longer owns.
-      invalidateRef.current = null;
+      // Task 10c fix round 1: this used to null `invalidateRef.current` here
+      // as a belt-and-braces guard. That is wrong under React's dev-only
+      // Strict Mode double-invoke: this effect and `<Canvas>`'s own internal
+      // mount effect are independent, so React can run THIS cleanup (nulling
+      // the ref) after `onCreated` has already fired once but before — or
+      // without — `onCreated` firing again to restore it. Every remaining
+      // interval tick then calls `invalidateRef.current?.()` against `null`
+      // forever: it never throws, so nothing crashes, but the scene never
+      // gets another `invalidate()` call and no frame after the first ever
+      // paints. `cancelled` (checked in every async callback that can
+      // outlive this effect — `document.fonts.ready` — and `clearInterval`
+      // above stopping the tick outright) already does the actual job this
+      // line was for, without the race: nothing here calls through the ref
+      // once cleanup has run. Leaving the ref itself alone means a stale
+      // pointer briefly survives an unmount, which is harmless — calling
+      // Three.js's own `invalidate` on a store nothing still ticks toward is
+      // a no-op, not a leak.
     };
   }, []);
 
