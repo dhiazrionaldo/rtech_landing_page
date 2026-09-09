@@ -34,7 +34,7 @@ export function Process({ locale }: { locale: Locale }) {
   const { phases } = t.process;
 
   return (
-    <Section id="cara-kerja" headingId="process-heading" fieldX={0.24} fieldZoom={2}>
+    <Section id="cara-kerja" headingId="process-heading">
       <SectionHeader
         badge={t.process.badge}
         heading={t.process.heading}
@@ -47,7 +47,7 @@ export function Process({ locale }: { locale: Locale }) {
           ordinary rounded surfaces while the section still reads as one run of
           work rather than four unrelated boxes. */}
       <div className="mt-16 lg:mt-24">
-        <div className="relative hidden lg:block">
+        <div className="hidden lg:block">
           <ScrubRail />
           <ol
             aria-hidden="true"

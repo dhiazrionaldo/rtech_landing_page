@@ -1,12 +1,13 @@
 import type { MetadataRoute } from "next";
 
+import { copy } from "@/content/copy";
 import { defaultLocale, locales } from "@/content/i18n";
 import { absoluteUrl } from "@/lib/site";
 
 /**
- * Served at /sitemap.xml. One entry per locale — there are no other routes yet.
- * When case studies land at /work/[slug], map them in here from
- * `content/case-studies.ts` rather than listing them by hand.
+ * Served at /sitemap.xml. One entry per locale plus one per case study,
+ * generated from `content/copy.ts` rather than listed by hand — the source
+ * of truth for the slugs the site actually serves at /work/[slug].
  *
  * `alternates.languages` emits the xhtml:link hreflang pairs inside the
  * sitemap, so the language relationship is declared in two places that agree:
@@ -15,7 +16,7 @@ import { absoluteUrl } from "@/lib/site";
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  return locales.map((locale) => ({
+  const pages = locales.map((locale) => ({
     url: absoluteUrl(`/${locale}`),
     lastModified,
     changeFrequency: "monthly" as const,
@@ -27,4 +28,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       },
     },
   }));
+
+  const work = locales.flatMap((locale) =>
+    copy[locale].products.items.map((product) => ({
+      url: absoluteUrl(`/${locale}/work/${product.slug}`),
+      lastModified,
+      changeFrequency: "yearly" as const,
+      priority: 0.7,
+    })),
+  );
+
+  return [...pages, ...work];
 }

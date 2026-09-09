@@ -24,6 +24,51 @@ page against the performance budget.
 - **Every trigger is created inside `gsap.context()`** and reverted on unmount.
 - **GSAP is dynamically imported**, so it lands in a chunk fetched on first
   motion component mount rather than in the initial bundle.
+- **One canvas.** The node field and brain field were removed on 2026-09-07:
+  CLAUDE.md bans particle fields standing in for a neural network and
+  wireframe brains by name. Their budget paid for a labelled three.js
+  architecture object (Task 10b/10c) that lived here through 2026-09-08.
+  Task 10e (2026-09-09) removed that object entirely — the client chose a
+  Spline scene instead of running two WebGL runtimes on one page. On
+  2026-09-09 that scene moved out of `Billboard`'s right column and became a
+  viewport-fixed page-level layer, on the client's instruction that the object
+  hold its position through the whole scroll. See trigger 7 below.
+- **The lane exists only where the scene does.** The billboard is the only
+  `data-scene-zone` on the page and the only thing that reserves the lane;
+  every section below it takes the full measure back. `Rail`'s `sceneZone`
+  and the `rail-track-lane` fade are still wired but currently unused — they
+  are what a rail would need if the scene were ever extended past the hero.
+- **The scene has a reserved lane, not a stacking fight.** Because the layer
+  is `position: fixed` it cannot push anything aside, so every container keeps
+  clear of it deliberately: `--scene-w/-h/-gap/-lane/-inset` in
+  `app/globals.css` are the single source for both the object's own size and
+  the space each container gives up (`lg:pr-[var(--scene-lane)]` on the
+  sections, header rows and footer; `lg:mr-[var(--scene-inset)]` on the
+  full-bleed rail track, which is the scroll viewport and so must shrink
+  rather than pad). All five tokens are `0` below `lg` and under reduced
+  motion, so no container gives up width where no scene renders.
+- **The scene has no frame, and neither does the rail's new edge.** The scene
+  box carries no border, radius or `overflow` clip; `scene-feather` masks its
+  edges so the object dissolves into the page instead of being cut off, and
+  that mask also contains the `Spotlight` glow the clip used to hold in. The
+  rail track gets the same treatment at `lg` and up (`rail-track`), because
+  the lane makes it stop mid-page where a hard cut reads as a chopped card
+  rather than as a bleed. Both are masks, not colours — nothing here paints
+  over content with a background-matched gradient, so both survive a theme
+  switch untouched.
+- **The logo corridor is CSS transforms, not WebGL.** That is what lets it run
+  below 768px where the Spline scene is gated off. It stops dead when it
+  scrolls out of view rather than animating to nobody. It is decorative and
+  `aria-hidden` — no links, no text, no tab stops — so every client is also
+  named in real text under the band in `trusted-by.tsx`. The two earlier bands
+  over the work and industries rails were removed on 2026-09-09; the clips
+  they used are still in `public/video/stream` and are now unreferenced.
+- **A fixed layer never pauses off-screen.** A hero object stops rendering
+  once it scrolls away; this one is on screen for the entire page, so it is
+  continuous WebGL for as long as the tab is open and focused. The `lg`
+  (1024px) gate is what contains the cost — phones and reduced-motion users
+  never fetch the Spline runtime at all, so the mobile Lighthouse budget is
+  untouched. Desktop perf is the number to watch here; re-measure before ship.
 
 ## Triggers
 
@@ -35,104 +80,71 @@ page against the performance budget.
 | 4 | Process rail | `ScrubRail` in `process.tsx` | `top 75%` | `center center` | **0.6** | no | `scaleX 0→1`, origin left |
 | ~~5~~ | ~~Contact reassurance cards~~ | removed | — | — | — | — | The three cards are one static line of copy now. See the note in `content/copy.ts` on why three claims about our own candour was a formula. |
 | 6 | Stat counters (`3`, `10`) | `CountUp` in `hero.tsx` | `top 92%` | — | no | yes | integer 0→value over 1.1s |
+| 7 | Fixed Spline scene | `FixedScene` in `fixed-scene.tsx` | IntersectionObserver on `[data-scene-zone]`, `rootMargin 0 0 -35% 0` | zone leaves view | n/a | no | mounts once at page level, `position: fixed` at `z-40`, at `lg` and up, under `prefers-reduced-motion: no-preference`; visible over the billboard only, then cross-fades out over 500ms as the hero leaves; cursor-interactive while in zone (`pointer-events-auto` on the box, never the wrapper); the scene animates under Spline's own control, not GSAP's |
+| 9 | Logo corridor (trusted by) | `LogoStream` in `system-stream.tsx` | n/a — CSS animation, not a ScrollTrigger | n/a | n/a | no | one band, two rails of 7 cards each, `translate3d` + `rotateY` on a 26s linear loop, streaming the client marks; paused off-screen via IntersectionObserver (`rootMargin: 200px`), and frozen mid-flight under `prefers-reduced-motion: reduce` |
+| 8 | Rail cards (all three rails) | `Reveal` in `rail.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 16→0`, stagger 0.06s |
 
-Trigger 4 is the only scrubbed animation on the page, and deliberately so. The
-rail stands for a run of work with a direction, so tying how much of it is drawn
-to how far into the section you are says something true. Scrubbing anything
-decorative is how a page starts to feel like it is animating *at* you.
+Trigger 4 is the only scrubbed **GSAP** animation on the page, and deliberately
+so. The rail stands for a run of work with a direction, so tying how much of it
+is drawn to how far into the section you are says something true. Scrubbing
+anything decorative is how a page starts to feel like it is animating *at* you.
 
 Trigger 6 skips the founding year on purpose. `2018` was never a quantity, and a
 year spinning like an odometer on a page whose argument is "we do not inflate
 numbers" is the wrong note. The flag lives on the stat data as `countUp` in
 `content/copy.ts`.
 
-## The node field
+Trigger 7 is intentionally not a `ScrollTrigger`, a scroll choreography, or
+even a scroll listener — it is a hero-only element that mounts once and lets
+Spline drive whatever motion the scene itself contains.
 
-| Element | Component | Driver | Range | Properties |
-|---|---|---|---|---|
-| Full-page node field — yaw | `NodeField` in `app/[locale]/layout.tsx` | `window.scrollY / (scrollHeight - innerHeight)` | 0 → 1 over the whole document | camera yaw `0 → 0.7π` |
-| Full-page node field — pose | `NodeField`, blended from `[data-field-scene]` | distance of each scene's centre from the viewport's centre | continuous | lateral offset and zoom |
+### Task 10e (2026-09-09) — Spline scene replaces the three.js architecture object
 
-### Scene poses
+Client decision: the supplied Spline component replaces the three.js/R3F
+architecture diagram rather than run two WebGL runtimes on one page. This
+removed, in full, the mechanism the two paragraphs above used to describe in
+detail: the fixed page-wide layer mounted in `app/[locale]/page.tsx`, the
+`objectX` / `data-object-x` pose contract on `Section` and `Rail` (15
+call-site references), the `z-20` / `z-30` elevation split it required on
+every text-bearing surface (26 references), `DarkPanel`'s `translucent` prop
+(7 references), `lib/token-color.ts` (the OKLCH-to-RGB resolver the R3F
+materials needed and nothing else used), and `content/architecture.ts` (the
+21-node/edge graph). All deleted, not archived — see git history for the
+pre-10e implementation and the Task 10c report for why it looked the way it
+did.
 
-Each section declares where it wants the field via two props on `Section`
-(`fieldX`, `fieldZoom`), which become `data-field-x` / `data-field-zoom`. The
-hero carries the attributes directly. A new section joins the choreography by
-adding two props — there is no list of section ids inside the canvas component.
+**What replaced it.** `FixedScene` (`components/motion/fixed-scene.tsx`) gates
+a Spline scene (`components/ui/splite.tsx`, wrapping
+`@splinetool/react-spline`) the same way `Architecture` used to gate three.js:
+a `useState` flipped by a `matchMedia` check for width (now `1024px`/`lg`,
+matching the hero's own two-column breakpoint, not the old `768px`) and
+`prefers-reduced-motion`, checked *before* the dynamic import of the Spline
+module is requested — so a phone or a reduced-motion user never fetches the
+Spline runtime, the same guarantee the outgoing component made for
+three.js/R3F. It mounted inside `Billboard`'s right column at first; since
+2026-09-09 it is a page-level `position: fixed` layer at `z-40` instead, so
+the object holds its viewport position for the entire scroll. There is still
+no section choreography to document — unlike the old `Architecture` layer it
+reads nothing from scroll position and asks nothing of any other element's
+stacking. It is `pointer-events-none` end to end so it cannot intercept a
+click meant for the content passing underneath it.
 
-| Scene | `fieldX` | `fieldZoom` | Copy reads |
-|---|---|---|---|
-| Hero | `0` | `1.0` | centred over the field |
-| About | `+0.28` | `1.3` | left |
-| Expertise | `-0.28` | `1.55` | right |
-| Products | `+0.24` | `1.8` | left |
-| Process | `-0.24` | `2.0` | right |
-| Contact | `0` | `2.3` | centred, closest framing |
+`components/ui/spotlight.tsx` (also supplied, also adapted) sits over the
+scene box as a small pointer-tracking glow — see its own file header for
+the three fixes made to the supplied version: `motion/react` imports instead
+of a second copy of the same library under `framer-motion`, named event
+handlers instead of a listener-removal that never actually detached, and the
+teal ramp (`--chart-2`) instead of a hardcoded `zinc` gradient. `--primary`
+appears nowhere in either new component — orange stays on the CTA.
 
-`fieldX` is a fraction of viewport width. The alternating sign is what produces
-the left/right rhythm in the supplied reference. Mobile takes 25% of the lateral
-travel — the full swing on a narrow screen throws most of the field off the edge.
-
-Poses are **blended, not switched**. Every marked element contributes a weight of
-`max(0, 1 - distance) ** 2` where distance is measured in viewport heights, so
-the nearest scene dominates while the next is already pulling. Hard boundaries
-were the first attempt and read as a cut the moment a section edge crossed the
-fold.
-
-Not a ScrollTrigger. It reads scroll position directly in its own rAF loop,
-which is why it does not appear in the table above — there is no GSAP timeline
-to record a scrub value for. It is `position: fixed`, so a single instance
-serves every section; the transform is driven by document progress rather than
-by any one section's, which is what makes it read as one object you travel past
-rather than an effect that restarts.
-
-Cost controls, all in the component:
-
-- `dpr` capped at 1.5.
-- 90 nodes on desktop, 34 below 768px, and no autonomous rotation on mobile —
-  scroll still moves it, the clock does not.
-- rAF stopped by IntersectionObserver off-screen and by `visibilitychange` in a
-  background tab.
-- `prefers-reduced-motion: reduce` never starts the loop. It paints one frame and
-  repaints on scroll only, so the field repositions but never animates by itself.
-- Edge testing is O(n²) per frame — 4,005 squared-distance checks at 90 nodes.
-  That is the number to watch if the node count is ever raised.
-
-**This is CLAUDE.md's banned motif #2.** It was requested, the conflict was put
-to the client, and the ban was overridden on 2026-08-18. The full note is at the
-top of `components/motion/node-field.tsx`.
-
-## The hero brain
-
-| Element | Component | Driver | Range | Properties |
-|---|---|---|---|---|
-| Hero brain — turn | `BrainField` in `hero.tsx` | `window.scrollY / window.innerHeight` | 0 → 1 over the first viewport | yaw `0 → 0.8rad` (~45°), drift `y −8%` |
-| Hero brain — sway | `BrainField` | clock | continuous | yaw `±0.1rad` |
-| Hero brain — pointer | `BrainField` | `pointermove` on `window` | continuous | parallax ±26px / ±18px, plus local node excitation within 190px |
-
-Geometry is real SVG path data — a cortex silhouette, cerebellum, stem and four
-gyri — sampled with `getPointAtLength`. Consecutive samples along a path are
-joined to draw the contour; nearby points on *different* paths are cross-linked,
-which is what makes it read as a network rather than a line drawing. Edges are
-computed once at mount because the shape is rigid, unlike the free field.
-
-Hidden below `lg`. On a narrow screen it lands under the copy, and the full-page
-field is already doing that job there.
-
-Three tuning notes, all of them mistakes worth not repeating:
-
-- **Yaw must stay small.** This is a side-view silhouette; past roughly 45° it
-  stops reading as a brain, and at 90° it is a vertical line. The idle sway is a
-  bounded `sin`, not an accumulating `time * k`, for exactly that reason.
-- **Progress is measured off the window, not the canvas rect.** The canvas is
-  135% of the card height and offset upward, so its own rect reported ~0.47 at
-  the top of the document and the brain arrived already three-quarters turned.
-- **Scale is 0.22, not 0.46.** The projection multiplies by `depth * 2.4`
-  downstream, so 0.46 spanned ~1200px inside a 760px canvas and only the middle
-  of the shape was ever on screen.
-
-**This is CLAUDE.md's banned "wireframe brains".** Requested directly and
-overridden on 2026-08-18, in the same conversation as the node-field override.
+**Known issue carried forward, not solved by this task:** the wired scene
+URL (`https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode`) is
+Spline's own public sample — an isometric robot. CLAUDE.md bans isometric
+robots by name and this exact scene is on thousands of other sites. It is
+wired as supplied so the integration is testable end to end; replacing it
+with a scene built for RTECH INDO is outstanding before launch. See the Task
+10e report for the measured cost (Spline runtime transfer size, scene file
+size, Lighthouse before/after).
 
 ## Non-scroll motion
 

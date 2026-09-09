@@ -25,7 +25,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 width and preserveAspectRatio centres the mark inside it. */}
             <Logo className="h-7 w-auto self-start" />
             <p className="max-w-[30ch] text-[0.8125rem] leading-relaxed text-muted-foreground">
-              {t.hero.badge}
+              {t.footer.tagline}
             </p>
           </div>
 

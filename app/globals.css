@@ -121,6 +121,63 @@
     color-mix(in oklch, var(--chart-4) 8%, transparent) 45%,
     transparent 76%
   );
+
+  /* ---------------------------------------------------------------------
+     The scene lane.
+
+     `FixedScene` is pinned to the viewport, so unlike an in-flow element it
+     cannot push anything out of its way. Every container that must not end
+     up underneath it therefore reserves the space itself, and all of them
+     reserve it from these four values so the lane can never drift out of
+     sync with the object sitting in it. Change the scene's width here and
+     the hero grid, the section containers, the rails and the footer all
+     follow in one step.
+
+     Zero below `lg`: no scene renders there, so no container gives up any
+     width. This is the same 1024px gate `FixedScene` uses — the two are
+     deliberately the same number, and the reduced-motion block at the end
+     of this file zeroes the lane for the same reason.
+
+     `--scene-lane` is what a container already inside the centred
+     `max-w-[1400px]` measure reserves as `padding-right`.
+
+     `--scene-inset` is the same distance measured from the *viewport* edge,
+     for the full-bleed rail track, which has no max-width to anchor to: the
+     outer margin the centred measure leaves, plus the container's own
+     horizontal padding, plus the lane. Without the first term the track
+     would clear the lane at 1400px and slide straight under the object on a
+     wider screen.
+     --------------------------------------------------------------------- */
+  --scene-w: 0px;
+  --scene-h: 0px;
+  --scene-gap: 2.5rem;
+  --scene-lane: 0px;
+  --scene-inset: 0px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --scene-w: 340px;
+    --scene-h: 380px;
+    --scene-lane: calc(var(--scene-w) + var(--scene-gap));
+    --scene-inset: calc(
+      max(0px, (100vw - 1400px) / 2) + 1.5rem + var(--scene-lane)
+    );
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --scene-w: 420px;
+    --scene-h: 460px;
+  }
+}
+
+@media (min-width: 1536px) {
+  :root {
+    --scene-w: 480px;
+    --scene-h: 520px;
+  }
 }
 
 .dark {
@@ -195,6 +252,134 @@
   background-image: var(--glow-media);
 }
 
+/* The scene's edges, dissolved rather than cut.
+
+   The fixed scene used to sit in a `rounded-[1.5rem] overflow-hidden` box,
+   which put a hard clip line across the object — most visible along the
+   bottom, where it read as the model being sliced off rather than as a scene
+   sitting in the page. That is exactly the "embedded media sitting in a
+   visible box" this page grades its video and posters to avoid, so the scene
+   is held to the same standard: no frame, no border, no corner radius. Just
+   an object that stops existing toward its edges.
+
+   Two linear gradients composited with `intersect` rather than one radial:
+   a radial fades from a centre point, so the feather depth changes around the
+   perimeter and the corners lose far more of the object than the edges do.
+   Intersecting a horizontal and a vertical ramp instead gives every edge the
+   same measured falloff and leaves the middle fully opaque, which is what
+   keeps the object itself at full strength while only its margins go.
+
+   The vertical ramp is deliberately asymmetric. The object is lit from above
+   and its mass sits low in the frame, so an even feather top and bottom takes
+   too much off the head and not enough off the base. Bottom gets the deepest
+   falloff, top the shallowest.
+
+   `mask-repeat: no-repeat` is load-bearing, not tidiness: with it, the mask
+   covers the border box exactly once and anything drawn outside that box —
+   the `Spotlight` glow, which is absolutely positioned and used to be
+   contained by `overflow-hidden` — is masked away instead of spilling across
+   the page. The mask replaces the clip it removed. */
+@utility scene-feather {
+  --feather-x: 3rem;
+  --feather-top: 2rem;
+  --feather-bottom: 5rem;
+
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      black var(--feather-x),
+      black calc(100% - var(--feather-x)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      black var(--feather-top),
+      black calc(100% - var(--feather-bottom)),
+      transparent 100%
+    );
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      black var(--feather-x),
+      black calc(100% - var(--feather-x)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      black var(--feather-top),
+      black calc(100% - var(--feather-bottom)),
+      transparent 100%
+    );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  /* `source-in` is the old WebKit spelling of `intersect`; both are needed. */
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* The rail track scrolls full-bleed but its first card must line up with the
+   page's 1400px content column, and the last card must bleed past the right
+   edge. One padding value does both: cards start on the grid, and the track
+   keeps scrolling past where the column stops.
+
+   The bleeding partial card at the right edge is the affordance that says
+   "there is more" without a scrollbar. It is load-bearing, not decoration. */
+@utility rail-track {
+  padding-inline: max(0.75rem, calc((100vw - 1400px) / 2));
+  scroll-padding-inline: max(0.75rem, calc((100vw - 1400px) / 2));
+  scrollbar-width: none;
+
+  @media (width >= 768px) {
+    padding-inline: max(1.5rem, calc((100vw - 1400px) / 2));
+    scroll-padding-inline: max(1.5rem, calc((100vw - 1400px) / 2));
+  }
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+}
+
+/* Where a track stops early for the scene lane, it fades instead of being cut.
+
+   Paired with `sceneZone` on `Rail`, never applied on its own. A track that
+   bleeds off the viewport edge is already correct — a card sliced by the edge
+   of the screen reads as "there is more", which is the affordance the base
+   utility above is built around. It is only the lane that breaks that: the
+   track stops in the middle of the page with empty space beside it, and the
+   same hard cut stops reading as a bleed and starts reading as a card chopped
+   mid-sentence. The fade restores the original meaning. Depth is a little
+   under `--scene-gap`, so the ramp finishes before the object begins.
+
+   Below `lg`, and under reduced motion, the lane is 0 and the track bleeds
+   off the viewport edge again — so the mask is scoped to exactly the case
+   that needs it and is absent everywhere else. */
+@utility rail-track-lane {
+  @media (width >= 1024px) {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      black calc(100% - 4rem),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      black calc(100% - 4rem),
+      transparent 100%
+    );
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+
+    @media (prefers-reduced-motion: reduce) {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+  }
+}
+
 /* Start states for scroll-revealed content.
  *
  * Scoped to `.js`, which the inline script in <head> adds before first paint.
@@ -210,6 +395,17 @@
  *
  * Only `opacity` and `transform` — neither participates in layout, so nothing
  * here can shift the page or cost CLS. */
+/* No scene renders under reduced motion, so nothing reserves a lane for it.
+   This block sits after the width queries above on purpose — it has to win. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --scene-w: 0px;
+    --scene-h: 0px;
+    --scene-lane: 0px;
+    --scene-inset: 0px;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .js [data-reveal],
   .js [data-reveal-group] > * {
