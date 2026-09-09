@@ -22,6 +22,11 @@ export function Section({
       aria-labelledby={headingId}
       className={cn("scroll-mt-24 px-3 py-20 md:px-6 md:py-28", className)}
     >
+      {/* No lane. The fixed scene is only visible over the billboard and the
+          capabilities rail now, and every section that uses this shell sits
+          below both of them, so all of them take the full measure back. The
+          two zones that do reserve the lane say so explicitly — see
+          `Rail`'s `sceneZone` and the hero grid in `billboard.tsx`. */}
       <div className="mx-auto w-full max-w-[1400px]">{children}</div>
     </section>
   );

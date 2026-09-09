@@ -14,7 +14,7 @@ type SplineSceneProps = {
 /**
  * Thin wrapper around `@splinetool/react-spline`'s default export, lazily
  * loaded so the Spline runtime itself is only fetched once this component
- * actually renders — the caller (`HeroScene`) is what decides *whether* it
+ * actually renders — the caller (`FixedScene`) is what decides *whether* it
  * ever renders at all.
  *
  * The supplied version's fallback referenced a `.loader` class that does not

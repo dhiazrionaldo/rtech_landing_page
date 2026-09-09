@@ -18,6 +18,8 @@ export function Rail({
   title,
   titleId,
   labels,
+  banner,
+  sceneZone = false,
   children,
   className,
 }: {
@@ -25,6 +27,20 @@ export function Rail({
   title: string;
   titleId: string;
   labels: { prev: string; next: string };
+  /**
+   * Optional decorative band between the heading and the track. Takes the
+   * same container and lane clearance as the heading row, so it lines up with
+   * the page grid rather than with the full-bleed track below it. Nothing
+   * load-bearing goes here — see `SystemStream`.
+   */
+  banner?: React.ReactNode;
+  /**
+   * Reserve the fixed scene's lane, and declare this section one of the two
+   * zones the scene is visible over. Opt-in rather than automatic: the scene
+   * only covers the top of the page now, so every rail below it takes the
+   * full measure back. See `FixedScene`.
+   */
+  sceneZone?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -34,9 +50,15 @@ export function Rail({
     <section
       id={id}
       aria-labelledby={titleId}
+      data-scene-zone={sceneZone ? "" : undefined}
       className={cn("scroll-mt-24 py-10 md:py-14", className)}
     >
-      <div className="mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6">
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-[1400px] items-end justify-between gap-6 px-3 md:px-6",
+          sceneZone && "lg:pr-[var(--scene-lane)]",
+        )}
+      >
         <h2
           id={titleId}
           className="font-heading text-[clamp(1.125rem,2vw,1.5rem)] font-semibold tracking-[-0.02em]"
@@ -46,6 +68,17 @@ export function Rail({
         <RailControls trackId={trackId} labels={labels} />
       </div>
 
+      {banner ? (
+        <div
+          className={cn(
+            "mx-auto mt-5 w-full max-w-[1400px] px-3 md:px-6",
+            sceneZone && "lg:pr-[var(--scene-lane)]",
+          )}
+        >
+          {banner}
+        </div>
+      ) : null}
+
       <Reveal
         as="ul"
         id={trackId}
@@ -53,7 +86,20 @@ export function Rail({
         y={16}
         // motion-safe: a reduced-motion user gets an instant jump rather than a
         // 400ms glide they did not ask for.
-        className="rail-track mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 motion-safe:scroll-smooth"
+        // `lg:mr-[var(--scene-inset)]` rather than padding: this element is
+        // the scroll viewport, so shrinking it is what stops cards travelling
+        // underneath the fixed scene. Padding would sit inside the scrollable
+        // area and cards would still pass through it. Measured from the
+        // viewport edge because this track is full-bleed by design and has no
+        // max-width to hang the lane off — see `--scene-inset` in globals.css.
+        // Below `lg` the token is 0 and the rail keeps its full bleed.
+        className={cn(
+          "rail-track mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 motion-safe:scroll-smooth",
+          // Only the scene's own zone gives up the lane; every rail below it
+          // bleeds to the viewport edge again, which is the shape the track
+          // was designed for.
+          sceneZone && "rail-track-lane lg:mr-[var(--scene-inset)]",
+        )}
       >
         {children}
       </Reveal>

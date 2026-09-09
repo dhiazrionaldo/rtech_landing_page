@@ -29,9 +29,46 @@ page against the performance budget.
   wireframe brains by name. Their budget paid for a labelled three.js
   architecture object (Task 10b/10c) that lived here through 2026-09-08.
   Task 10e (2026-09-09) removed that object entirely — the client chose a
-  Spline scene instead of running two WebGL runtimes on one page — and it is
-  now a hero-only element in `Billboard`'s right column rather than a
-  page-wide fixed layer. See trigger 7 below.
+  Spline scene instead of running two WebGL runtimes on one page. On
+  2026-09-09 that scene moved out of `Billboard`'s right column and became a
+  viewport-fixed page-level layer, on the client's instruction that the object
+  hold its position through the whole scroll. See trigger 7 below.
+- **The lane exists only where the scene does.** The billboard is the only
+  `data-scene-zone` on the page and the only thing that reserves the lane;
+  every section below it takes the full measure back. `Rail`'s `sceneZone`
+  and the `rail-track-lane` fade are still wired but currently unused — they
+  are what a rail would need if the scene were ever extended past the hero.
+- **The scene has a reserved lane, not a stacking fight.** Because the layer
+  is `position: fixed` it cannot push anything aside, so every container keeps
+  clear of it deliberately: `--scene-w/-h/-gap/-lane/-inset` in
+  `app/globals.css` are the single source for both the object's own size and
+  the space each container gives up (`lg:pr-[var(--scene-lane)]` on the
+  sections, header rows and footer; `lg:mr-[var(--scene-inset)]` on the
+  full-bleed rail track, which is the scroll viewport and so must shrink
+  rather than pad). All five tokens are `0` below `lg` and under reduced
+  motion, so no container gives up width where no scene renders.
+- **The scene has no frame, and neither does the rail's new edge.** The scene
+  box carries no border, radius or `overflow` clip; `scene-feather` masks its
+  edges so the object dissolves into the page instead of being cut off, and
+  that mask also contains the `Spotlight` glow the clip used to hold in. The
+  rail track gets the same treatment at `lg` and up (`rail-track`), because
+  the lane makes it stop mid-page where a hard cut reads as a chopped card
+  rather than as a bleed. Both are masks, not colours — nothing here paints
+  over content with a background-matched gradient, so both survive a theme
+  switch untouched.
+- **The logo corridor is CSS transforms, not WebGL.** That is what lets it run
+  below 768px where the Spline scene is gated off. It stops dead when it
+  scrolls out of view rather than animating to nobody. It is decorative and
+  `aria-hidden` — no links, no text, no tab stops — so every client is also
+  named in real text under the band in `trusted-by.tsx`. The two earlier bands
+  over the work and industries rails were removed on 2026-09-09; the clips
+  they used are still in `public/video/stream` and are now unreferenced.
+- **A fixed layer never pauses off-screen.** A hero object stops rendering
+  once it scrolls away; this one is on screen for the entire page, so it is
+  continuous WebGL for as long as the tab is open and focused. The `lg`
+  (1024px) gate is what contains the cost — phones and reduced-motion users
+  never fetch the Spline runtime at all, so the mobile Lighthouse budget is
+  untouched. Desktop perf is the number to watch here; re-measure before ship.
 
 ## Triggers
 
@@ -43,7 +80,8 @@ page against the performance budget.
 | 4 | Process rail | `ScrubRail` in `process.tsx` | `top 75%` | `center center` | **0.6** | no | `scaleX 0→1`, origin left |
 | ~~5~~ | ~~Contact reassurance cards~~ | removed | — | — | — | — | The three cards are one static line of copy now. See the note in `content/copy.ts` on why three claims about our own candour was a formula. |
 | 6 | Stat counters (`3`, `10`) | `CountUp` in `hero.tsx` | `top 92%` | — | no | yes | integer 0→value over 1.1s |
-| 7 | Hero Spline scene | `HeroScene` in `hero-scene.tsx` | n/a — not a ScrollTrigger, no scroll choreography | n/a | n/a | n/a | mounts once, at `lg` and up, under `prefers-reduced-motion: no-preference`; the scene itself animates under Spline's own control, not GSAP's |
+| 7 | Fixed Spline scene | `FixedScene` in `fixed-scene.tsx` | IntersectionObserver on `[data-scene-zone]`, `rootMargin 0 0 -35% 0` | zone leaves view | n/a | no | mounts once at page level, `position: fixed` at `z-40`, at `lg` and up, under `prefers-reduced-motion: no-preference`; visible over the billboard only, then cross-fades out over 500ms as the hero leaves; cursor-interactive while in zone (`pointer-events-auto` on the box, never the wrapper); the scene animates under Spline's own control, not GSAP's |
+| 9 | Logo corridor (trusted by) | `LogoStream` in `system-stream.tsx` | n/a — CSS animation, not a ScrollTrigger | n/a | n/a | no | one band, two rails of 7 cards each, `translate3d` + `rotateY` on a 26s linear loop, streaming the client marks; paused off-screen via IntersectionObserver (`rootMargin: 200px`), and frozen mid-flight under `prefers-reduced-motion: reduce` |
 | 8 | Rail cards (all three rails) | `Reveal` in `rail.tsx` | `top 86%` | — | no | yes | `opacity 0→1`, `y 16→0`, stagger 0.06s |
 
 Trigger 4 is the only scrubbed **GSAP** animation on the page, and deliberately
@@ -75,7 +113,7 @@ materials needed and nothing else used), and `content/architecture.ts` (the
 pre-10e implementation and the Task 10c report for why it looked the way it
 did.
 
-**What replaced it.** `HeroScene` (`components/motion/hero-scene.tsx`) gates
+**What replaced it.** `FixedScene` (`components/motion/fixed-scene.tsx`) gates
 a Spline scene (`components/ui/splite.tsx`, wrapping
 `@splinetool/react-spline`) the same way `Architecture` used to gate three.js:
 a `useState` flipped by a `matchMedia` check for width (now `1024px`/`lg`,
@@ -83,13 +121,16 @@ matching the hero's own two-column breakpoint, not the old `768px`) and
 `prefers-reduced-motion`, checked *before* the dynamic import of the Spline
 module is requested — so a phone or a reduced-motion user never fetches the
 Spline runtime, the same guarantee the outgoing component made for
-three.js/R3F. It lives only inside `Billboard`'s right column now, not as a
-page-level fixed layer, so there is no section choreography to document: it
-mounts once, stays put, and unmounts with the hero the way any other hero
-element would.
+three.js/R3F. It mounted inside `Billboard`'s right column at first; since
+2026-09-09 it is a page-level `position: fixed` layer at `z-40` instead, so
+the object holds its viewport position for the entire scroll. There is still
+no section choreography to document — unlike the old `Architecture` layer it
+reads nothing from scroll position and asks nothing of any other element's
+stacking. It is `pointer-events-none` end to end so it cannot intercept a
+click meant for the content passing underneath it.
 
 `components/ui/spotlight.tsx` (also supplied, also adapted) sits over the
-scene column as a small pointer-tracking glow — see its own file header for
+scene box as a small pointer-tracking glow — see its own file header for
 the three fixes made to the supplied version: `motion/react` imports instead
 of a second copy of the same library under `framer-motion`, named event
 handlers instead of a listener-removal that never actually detached, and the

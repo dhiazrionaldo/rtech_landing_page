@@ -175,6 +175,19 @@ type Dict = {
      */
     visionLabel: string;
     vision: string;
+    /**
+     * The closing statement under the mission/vision pair, supplied by the
+     * client on 2026-09-09 and set verbatim in English.
+     *
+     * It is the one place on the page that says what we do without naming a
+     * sector, which is why it sits below both columns rather than inside
+     * either: it is the sentence the mission and the vision are both in
+     * service of, not a third item beside them.
+     *
+     * The Indonesian is a translation, not deck copy, and has not been
+     * approved by the client — see the note in the `id` dictionary.
+     */
+    closing: string;
   };
   process: {
     badge: string;
@@ -286,6 +299,14 @@ const sectorsId: Sector[] = [
       "Strategic Sales Prediction",
     ],
   },
+  {
+    id: "your-sector",
+    name: "Bisnis Anda",
+    discipline: "Automasi Bisnis Anda",
+    projects: [
+      "Ayo, kita bicarakan bagaimana kami bisa membantu bisnis Anda.",
+    ],
+  },
 ];
 
 const sectorsEn: Sector[] = [
@@ -318,6 +339,14 @@ const sectorsEn: Sector[] = [
       "Predictive Maintenance",
       "AI Recruitment Agent",
       "Strategic Sales Prediction",
+    ],
+  },
+  {
+    id: "your-sector",
+    name: "Your business",
+    discipline: "Automation for your business",
+    projects: [
+      "Let's discuss how we can help your business.",
     ],
   },
 ];
@@ -484,6 +513,13 @@ export const copy: Record<Locale, Dict> = {
       // explicit approval on 2026-08-10. Every other word is the deck's.
       vision:
         "Menjadi pionir solusi digital berbasis AI yang mengoptimalkan efisiensi dan keamanan operasi industri di Indonesia.",
+      // TRANSLATION, NOT DECK COPY, AND NOT YET APPROVED. The client supplied
+      // this paragraph in English only. This is a faithful rendering of it,
+      // written here so the Indonesian route is not left with an English
+      // block — it is not deck-verbatim and nobody has signed it off. Have the
+      // client read it before launch.
+      closing:
+        "Kami membangun teknologi untuk bisnis yang tidak boleh berhenti, apa pun industrinya. Dari minyak dan gas, aviasi, hingga manufaktur dan sektor lainnya, kami melihat setiap bisnis punya kerumitannya sendiri — tetapi banyak yang menghadapi persoalan yang sama: proses manual, data yang terputus, sistem yang terpecah, dan orang-orang berharga yang menghabiskan terlalu banyak waktu menyiasati inefisiensi. Di situ setiap keputusan bergantung pada informasi yang tepat, pada saat yang tepat. Kami membantu bisnis mengubah persoalan itu menjadi peluang dengan merancang solusi digital yang menyambungkan operasi, merapikan alur kerja, dan membuat informasi bekerja lebih keras. Baik Anda menjalankan pabrik, mengelola jaringan logistik, melayani pelanggan, atau menumbuhkan perusahaan, kami membangun teknologi mengikuti cara bisnis Anda benar-benar berjalan. Kami mengubah kerumitan yang tersembunyi itu menjadi sistem digital yang menyambungkan seluruh operasi, sehingga teknologi bukan sekadar menempel di atas bisnis, melainkan menjadi bagian dari cara bisnis bergerak, menyesuaikan diri, dan bekerja.",
     },
     stats: [
       { value: "2018", label: "Berdiri sejak" },
@@ -654,6 +690,9 @@ export const copy: Record<Locale, Dict> = {
       visionLabel: "Vision",
       vision:
         "To be the pioneer of AI-based digital solutions that improve efficiency and safety in industrial operations across Indonesia.",
+      // Verbatim as supplied by the client on 2026-09-09.
+      closing:
+        "We build technology for businesses that need to keep moving, regardless of industry. From oil & gas and aviation to manufacturing and beyond, we’ve seen that every business has its own complexity, but many share the same challenges: manual processes, disconnected data, fragmented systems, and valuable people spending too much time working around inefficiencies. Where every decision depends on having the right information at the right moment. We help businesses turn those challenges into opportunities by designing digital solutions that connect operations, streamline workflows, and make information work harder. Whether you’re running a factory, managing a logistics network, serving customers, or scaling a growing enterprise, we build technology around how your business actually works. We turn those hidden complexities into digital systems that connect the entire operation, so technology doesn’t simply sit on top of the business, but becomes part of how the business moves, adapts, and performs.",
     },
     stats: [
       { value: "2018", label: "Founded" },
