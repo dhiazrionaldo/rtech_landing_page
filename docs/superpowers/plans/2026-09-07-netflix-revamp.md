@@ -2674,6 +2674,129 @@ Commit as soon as the gates pass, then screenshot and amend if needed.
 
 ---
 
+### Task 10d: Two-column hero, denser connections, and undo the overlay machinery
+
+Client feedback: *"the 3d is already great but it's behind the content i want it on the most right side or on the most left side that kinda have 2 column for the hero content and the 3d. so it's not the background there. 2nd i want the nodes is having more connecting nodes there"*
+
+The object is good. It is in the wrong place. It stops being a page-wide overlay and becomes the right-hand column of a genuine two-column hero.
+
+**This task DELETES more than it adds.** Several mechanisms built in Tasks 10b and 10c exist only to make a full-page overlay survivable. With the object confined to the hero column, they are dead weight and must come out — leaving them is how a codebase accumulates machinery nobody can explain.
+
+**Files:**
+- Modify: `components/sections/billboard.tsx`, `components/motion/architecture.tsx`, `components/motion/architecture-scene.tsx`
+- Modify: `app/[locale]/page.tsx`, `components/section.tsx`, `components/rail/rail.tsx`, `components/sections/about.tsx`
+- Modify: `content/architecture.ts`, `content/architecture.test.ts`
+- Modify: `MOTION.md`
+
+---
+
+#### Change 1 — The hero becomes two real columns
+
+```
++-------------------------+------------------------+
+| AI SYSTEMS ... SINCE 2018 |      o---o---o       |
+| Operations that           |      |  \|/  |       |
+| do not stop.              |      o---o---o       |
+| AI agents, custom soft... |      |  /|\  |       |
+| [ Book a call ] [ See ]   |      o---o---o       |
+| 2018   3   10             |    [ on-premise ]    |
+| PERTAMINA KPI PET ...     |                      |
++-------------------------+------------------------+
+       content column            object column
+              they never overlap
+```
+
+- Above `lg`, the billboard is a two-column grid. All existing hero content — eyebrow, headline, subline, both CTAs, the stat rail, the client logo row — stays in the **left** column. The object occupies the **right** column.
+- The columns must not overlap at any width. The object is a peer element, not a backdrop. This is the entire point of the task.
+- Below `lg`, there is no second column: the object is not rendered at all. (It is already gated off below 768px; extend that so the single-column layout never has an object crammed into it.)
+- **The billboard poster stays** as the hero's full-bleed background behind BOTH columns, keeps `priority`, and remains the LCP element. It is what gives the hero depth: scrimmed photograph behind, teal diagram in the right column, copy in the left.
+- Re-tune the poster scrim if needed so the object reads clearly against it. Scrim built from `--background` as now.
+
+#### Change 2 — The object leaves when the hero does
+
+Replace the per-section choreography with a single exit.
+
+- The object eases out as the hero scrolls away — `opacity` and `transform` only, never layout.
+- Below the hero, no object at all. The rails get their full width and their bleeding-card edge back.
+- Keep the GSAP path through `registerScrollTrigger()` so nothing loads under `prefers-reduced-motion: reduce`. Scrubbed, not pinned.
+
+#### Change 3 — Remove the machinery that only existed for the overlay
+
+Delete all of it. Verify each with a grep before and after.
+
+1. **`data-object-x` poses.** Remove the `objectX` prop from `Section` and `Rail` and every call site. The per-section left/right choreography is gone; a prop nothing reads is dead code.
+2. **The z-20 / z-30 elevation split.** Every text-bearing element was raised to `z-30` so the overlay could sit at `z-20` without hiding copy. With no overlay, remove those `z-*` additions and return the elements to their natural stacking. Leave the nav at `z-50`.
+3. **`DarkPanel`'s `translucent` prop.** It existed so the overlay showed through About. Remove the prop and the `about.tsx` call site's use of it; `DarkPanel` goes back to opaque only.
+4. **The billboard header's stacking-context CONSTRAINT comment**, and `isolate`. The comment documents a constraint that only existed because a page-level fixed layer had to paint above the poster. Re-introduce `isolate` on the header if that is now the correct, simpler behaviour, and replace the comment with whatever is true afterwards. Do not leave a comment describing a situation that no longer exists.
+
+If removing any of these turns out to still be load-bearing, **stop and report it** rather than leaving it in silently. A leftover with no explanation is worse than either outcome.
+
+#### Change 4 — Many more connecting edges
+
+Client asked for more connections. Grow from 27 edges to roughly 45.
+
+**Constraint that cannot be broken:** every edge must descend — `position[1]` of `from` strictly greater than `to`. The existing test enforces it, and the direction is the diagram's argument: data in from the source systems, decisions out to the field. Sibling links at the same tier are not allowed.
+
+Add cross-links that are true of how these systems actually connect:
+
+```
+erp -> pipeline          hris -> pipeline
+wms -> integration       scada -> integration
+integration -> vision    integration -> extraction
+pipeline -> agent        pipeline -> forecast
+agent -> hse-inspection  agent -> piping
+vision -> checklist      vision -> maintenance
+forecast -> warehouse    forecast -> sales
+extraction -> cargo
+piping -> tablet         warehouse -> tablet
+cargo -> command         checklist -> command
+maintenance -> tablet    sales -> mobile
+```
+
+Keep every existing edge. Update the test asserting `>= 10` edges to assert `>= 40`.
+
+**The limit, stated again because density is the risk:** `CLAUDE.md` bans "particle fields of connected nodes and edges standing in for 'a neural network'" and says an object that "degrades into unlabeled dots and lines has become the cliché." At 21 nodes and ~45 edges this is denser than anything reviewed so far. It survives only because every node keeps a legible label. **If the edge density makes labels unreadable or the graph illegible, add fewer edges and report the number you stopped at.** Never drop a label to fit an edge.
+
+---
+
+#### Gates
+
+- **No new dependencies.** `package.json` byte-identical.
+- No hardcoded colours; every scene colour via `resolveToken`. **No `--primary` in the scene.**
+- Teal palette unchanged: nodes `--chart-1`, edges `--chart-3`, pulses `--chart-1`, labels `--foreground`, plinth `--card`.
+- Server Components by default; only the wrapper and scene are client. React Compiler on.
+- No WebGL below `lg`, none under `prefers-reduced-motion: reduce`, gated before the dynamic import resolves.
+- `dpr={[1, 1.5]}`, `frameloop="demand"`, pulse tick ≤20fps, suspended on `visibilityState === "hidden"`.
+- **Do not re-introduce the `invalidateRef` bug.** That ref is set by `<Canvas>`'s `onCreated` and must not be nulled by any other effect's cleanup — under Strict Mode's double-invoke that permanently kills rendering. There is a comment on it; keep it.
+- Named exports. No `any`. No `@ts-ignore` without a comment. No `console.log`.
+- All four gates pass; lint 0 errors AND 0 warnings.
+
+#### Verify
+
+```bash
+printf 'objectX gone:   '; grep -rc "objectX\|data-object-x" components app | grep -v ':0' || echo "clean"
+printf 'translucent gone:'; grep -rc "translucent" components | grep -v ':0' || echo "clean"
+printf 'h1 count:       '; curl -s http://localhost:3001/en | grep -o '<h1' | wc -l
+printf 'headline:       '; curl -s http://localhost:3001/en | grep -c "Operations that do not stop"
+printf 'opacity:0 leak: '; curl -s http://localhost:3001/en | grep -c 'opacity:0'
+```
+
+Confirm the dev server is actually up before trusting any curl result — a dead server returns empty and every check reads as zero.
+
+Then screenshot on a **cold load, no scrolling**, at 1440x900 and at 1280x800:
+1. Are the two columns clearly separate, with zero overlap between the object and any copy?
+2. Is the object clearly visible and legible against the poster?
+3. Are all 21 labels readable at this density?
+4. Scroll into the capabilities rail: is the object gone, and do the rails have their full width and bleeding-card edge back?
+
+Describe all four honestly.
+
+Commit as soon as the gates pass, then screenshot and amend. Agents in this run have twice lost work to account rate limits; commit early.
+
+**PAUSE FOR REVIEW.**
+
+---
+
 # Phase 3 — Hover preview and the scoping concierge
 
 *(CLAUDE.md stage 4. Pause for review at the end of Task 16.)*
