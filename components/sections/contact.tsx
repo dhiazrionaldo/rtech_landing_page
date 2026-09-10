@@ -115,6 +115,10 @@ export function Contact({ locale }: { locale: Locale }) {
               {t.footer.officesLabel}
             </dt>
             <dd className="mt-2 text-sm text-foreground">{contact.locality}</dd>
+            <dt className="pt-4 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-muted-foreground">
+              {t.footer.branchLabel}
+            </dt>
+            <dd className="mt-2 text-sm text-foreground">{contact.branch}</dd>
           </div>
         </dl>
 
