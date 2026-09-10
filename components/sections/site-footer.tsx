@@ -78,6 +78,15 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <p className="max-w-[28ch] text-[0.8125rem] leading-relaxed text-muted-foreground">
               {contact.address}
             </p>
+            <p className="font-mono text-[0.5625rem] uppercase tracking-[0.16em] text-muted-foreground">
+              {t.footer.branchLabel}
+            </p>
+            <p className="text-sm leading-relaxed text-foreground">
+              {contact.branch}
+            </p>
+            <p className="max-w-[28ch] text-[0.8125rem] leading-relaxed text-muted-foreground">
+              {contact.branchAddress}
+            </p>
           </address>
         </div>
 

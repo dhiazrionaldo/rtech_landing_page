@@ -254,6 +254,7 @@ type Dict = {
     navLabel: string;
     contactLabel: string;
     officesLabel: string;
+    branchLabel: string;
   };
 };
 
@@ -263,8 +264,10 @@ export const contact = {
   phone: "0812-788-315-73",
   /** E.164 for the tel: href and JSON-LD. */
   phoneE164: "+6281278831573",
-  address: "Jl. Perumahan Rakyat No.11, Sei. Buah, Ilir Timur II, Palembang",
-  locality: "Jakarta / Palembang / Bekasi",
+  address: "Kirana Two Tower, level 10-A Jl. Boulevard Timur No.88, Pegangsaan Dua, Kelapa Gading, Jakarta Utara, DKI Jakarta 14250",
+  locality: "DKI Jakarta",
+  branch: "Palembang",
+  branchAddress: "Jl. Perumahan Rakyat No.11, Sei. Buah, Ilir Timur II, Palembang"
 } as const;
 
 const sectorsId: Sector[] = [
@@ -655,7 +658,7 @@ export const copy: Record<Locale, Dict> = {
     rails: {
       capabilities: "What we build",
       work: "Systems running in production",
-      industries: "Industries we know",
+      industries: "Industries we solved",
       prev: "Scroll left",
       next: "Scroll right",
       inProduction: "In production",
@@ -800,7 +803,8 @@ export const copy: Record<Locale, Dict> = {
       rights: "All rights reserved.",
       navLabel: "Pages",
       contactLabel: "Contact",
-      officesLabel: "Where we work",
+      officesLabel: "Head Office",
+      branchLabel: "Branch Office",
     },
   },
 };
