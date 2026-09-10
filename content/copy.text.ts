@@ -633,7 +633,8 @@ export const copy: Record<Locale, Dict> = {
       rights: "Seluruh hak cipta dilindungi.",
       navLabel: "Halaman",
       contactLabel: "Kontak",
-      officesLabel: "Wilayah kerja",
+      officesLabel: "Kantor Pusat",
+      branchLabel: "Kantor Cabang",
     },
   },
 
